@@ -1,21 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" role="img" aria-label="Vertida — recetas y temporizador de café">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vertida — logo">
   <title>Vertida</title>
-  <!-- Icon, scaled into 160x160 box -->
-  <g transform="translate(8,8) scale(0.28125)">
-    <rect width="512" height="512" rx="112" fill="#3B2316"/>
-    <g stroke-linejoin="round" stroke-linecap="round">
-      <path d="M84 168 L194 308 L318 308 L428 168" fill="none" stroke="#FFFEFB" stroke-width="34"/>
-      <ellipse cx="256" cy="168" rx="172" ry="38" fill="#FFFEFB"/>
-      <ellipse cx="256" cy="168" rx="136" ry="24" fill="#3B2316"/>
-      <rect x="246" y="308" width="20" height="52" rx="10" fill="#E08A3C"/>
-    </g>
-    <path d="M256 352 C282 388 304 412 304 440 A48 48 0 1 1 208 440 C208 412 230 388 256 352 Z" fill="#E08A3C"/>
+  <rect width="512" height="512" rx="116" fill="#141414"/>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <rect x="96" y="73" width="320" height="36" rx="18" fill="#F5F0E8"/>
+    <path d="M132 145 L220 301 L292 301 L380 145" fill="none" stroke="#F5F0E8" stroke-width="38"/>
+    <rect x="242" y="301" width="28" height="32" rx="14" fill="#F5F0E8"/>
   </g>
-  <!-- Wordmark -->
-  <text x="180" y="106"
-        font-family="Georgia, 'Times New Roman', serif"
-        font-size="72" font-weight="700" letter-spacing="-1"
-        fill="#241A12">vertida</text>
-  <circle cx="592" cy="88" r="8" fill="#A85A24"/>
-  <!-- Tagline omitted at small sizes; full lockup stays legible in README -->
+  <path d="M256 341 C276 367 292 385 292 403 A36 36 0 1 1 220 403 C220 385 236 367 256 341 Z" fill="#F5F0E8"/>
 </svg>

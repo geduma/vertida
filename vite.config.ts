@@ -27,7 +27,7 @@ export default defineConfig({
         orientation: 'portrait',
         lang: 'es',
         dir: 'ltr',
-        theme_color: '#3b2316',
+        theme_color: '#141414',
         background_color: '#141110',
         icons: [
           { src: 'favicon-16x16.png', sizes: '16x16', type: 'image/png' },

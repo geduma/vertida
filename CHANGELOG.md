@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — 014 logo redesign + in-app brand
+### Added
+- `src/components/Brand.tsx`: mark-only 32px brand (`brand-bar`, hidden in brew `running`); mounted in `src/App.tsx` before the tabbar.
+- `tests/brand-014.test.ts`: black-premium lock (no browns/oranges), centered abstract mark, mark-only logo, flat favicon vs gradient icon, brand mount, platform color refs.
+### Changed
+- Logo redesigned v3 (no text anywhere): abstract dripper (rim bar + geometric V + pour + drop, no realistic ellipses) in warm cream `#F5F0E8` over near-black tile `#141414` (gradient `#2A2A2A → #0B0B0B` in `public/icon.svg`). Applies to `public/icon.svg`, `public/favicon.svg`, `public/logo.svg` (mark-only 512 viewBox), `public/safari-pinned-tab.svg`, `src/components/Brand.tsx`.
+- Illustration optically centered (content margins equalized top/bottom) in all five mark files.
+- Platform refs to near-black: `index.html` (theme-color, mask-icon, TileColor), `vite.config.ts` (theme_color), `public/browserconfig.xml`, `scripts/gen-icons.mjs` (BG). Regenerated PNGs + `favicon.ico` via `npm run gen:icons`.
+- `src/theme/app.css` desktop grid reserves row 1 for `.brand-bar` (sidebar moves to `grid-row:2`, `tests/desktop-012.test.ts` intentionally updated); removed dead `.brand-word` styles.
+### Verified
+- `npm run validate:data` OK 7, `npm test` 52/52, `npm run build` clean.
+
 ## [Unreleased] — English-only code/tests/docs (data contract untouched)
 ### Changed
 - Tests renamed to English: `estable-005` → `stable-005`, `centrado-cards-006` → `centered-cards-006`, `estabilidad-011` → `stability-011`, `descubrir-013` → `discover-013` (one string updated: `setDiscoOpen` → `setDiscoveryOpen`).

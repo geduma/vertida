@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo.svg" alt="Vertida — logo" width="320" />
+  <img src="public/logo.svg" alt="Vertida — logo" width="96" />
 </p>
 
 # Vertida · coffee recipes and timer

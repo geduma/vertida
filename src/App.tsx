@@ -9,6 +9,7 @@ import { exchangeSession, getProviders, getSession, logout, readCallbackToken, s
 import es from './i18n/es.json';
 import en from './i18n/en.json';
 import Toggle from './components/Toggle';
+import Brand from './components/Brand';
 import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
@@ -144,6 +145,7 @@ export default function App() {
   return (
     <div>
       <div className="app">
+        <Brand compact={tab === 'brew' && step === 'running'} />
         <nav key={lang} className={`tabbar${tab === 'brew' && step === 'running' ? ' is-hidden' : ''}`} role="tablist" aria-label={t('nav.label')}>
           {TABS.map(({ id, labelKey }) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'recipes') setFavOnly(false); setStep('summary'); }}>{t(labelKey)}</button>

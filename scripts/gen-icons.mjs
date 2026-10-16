@@ -3,7 +3,7 @@ import pngToIco from 'png-to-ico';
 import fs from 'node:fs';
 
 const pub = 'public';
-const BG = '#3B2316';
+const BG = '#141414';
 
 // 1. Standard PNGs from favicon.svg (rounded, transparent corners OK for browsers)
 for (const size of [16, 32, 48]) {

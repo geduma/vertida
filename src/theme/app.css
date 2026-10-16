@@ -21,12 +21,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 h1,h2{line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
 p{margin:0 0 12px;max-width:65ch}
 
+/* Brand bar: in-app lockup, spans full width on desktop grid */
+.brand-bar{display:flex;align-items:center;gap:10px;padding:2px 4px 0;min-height:44px}
+@media(min-width:1024px){.brand-bar{grid-column:1/-1;grid-row:1}}
+.brand-mark{display:grid;place-items:center;width:32px;height:32px;flex:none}
+.brand-mark svg{display:block;border-radius:8px}
+
 /* Airy dashboard: 1-col mobile, multi-col desktop */
 .app{max-width:640px;margin:0 auto;min-height:100dvh;padding:20px 20px calc(96px + env(safe-area-inset-bottom));background:var(--bg);display:flex;flex-direction:column;gap:16px}
 .app>section{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media(min-width:1024px){
   .app{max-width:1200px;padding:32px 32px 48px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start}
-  .app>section{grid-column:2}
+  .app>section{grid-column:2;grid-row:2}
   .home{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
   .home .hero-home{grid-column:1/-1}
   .recipes-list{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -78,7 +84,7 @@ label>select,label>input{width:100%;min-height:var(--input-h)}
 @media(min-width:1024px){
   .tabbar{
     position:sticky;top:24px;left:auto;right:auto;bottom:auto;
-    flex-direction:column;max-width:none;margin:0;border-radius:20px;padding:10px;grid-column:1;grid-row:1/-1;align-self:start;
+    flex-direction:column;max-width:none;margin:0;border-radius:20px;padding:10px;grid-column:1;grid-row:2;align-self:start;
   }
   .tabbar button{min-height:48px;justify-content:flex-start;text-align:left;padding:0 14px;border-radius:12px;font-size:15px}
 }
