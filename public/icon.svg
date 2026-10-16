@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vertida — icono de dripper de café">
+  <title>Vertida</title>
+  <defs>
+    <radialGradient id="v-bg" cx="50%" cy="28%" r="85%">
+      <stop offset="0%" stop-color="#5A3220"/>
+      <stop offset="55%" stop-color="#3B2316"/>
+      <stop offset="100%" stop-color="#2A1810"/>
+    </radialGradient>
+    <linearGradient id="v-drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F0A454"/>
+      <stop offset="100%" stop-color="#D97A26"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle background -->
+  <rect width="512" height="512" rx="112" fill="url(#v-bg)"/>
+
+  <!-- Dripper body (V shape = Vertida) -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- outer wall -->
+    <path d="M84 168 L194 308 L318 308 L428 168"
+          fill="none" stroke="#FFFEFB" stroke-width="34"/>
+    <!-- rim -->
+    <ellipse cx="256" cy="168" rx="172" ry="38" fill="#FFFEFB"/>
+    <ellipse cx="256" cy="168" rx="172" ry="38" fill="none" stroke="#FFFEFB" stroke-width="8"/>
+    <!-- coffee bed -->
+    <ellipse cx="256" cy="168" rx="136" ry="24" fill="#3B2316"/>
+    <ellipse cx="256" cy="166" rx="136" ry="24" fill="none" stroke="#A85A24" stroke-width="6" opacity="0.9"/>
+    <!-- pour stream -->
+    <rect x="246" y="308" width="20" height="52" rx="10" fill="#E08A3C"/>
+  </g>
+
+  <!-- Drop -->
+  <path d="M256 352
+           C282 388 304 412 304 440
+           A48 48 0 1 1 208 440
+           C208 412 230 388 256 352 Z"
+        fill="url(#v-drop)"/>
+  <!-- Drop highlight: legible at 16px -->
+  <ellipse cx="238" cy="438" rx="12" ry="16" fill="#FFFEFB" opacity="0.55" transform="rotate(-18 238 438)"/>
+</svg>

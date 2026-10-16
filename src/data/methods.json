@@ -1,0 +1,6 @@
+[
+  {"id":"v60","nombreKey":"method.v60.name","descripcionKey":"method.v60.desc","icono":"v60","moliendaKey":"grind.media","orden":1,"limites":{"tazasMax":4,"aguaMaxG":1000,"cafeMaxG":60}},
+  {"id":"chemex","nombreKey":"method.chemex.name","descripcionKey":"method.chemex.desc","icono":"chemex","moliendaKey":"grind.media-gruesa","orden":2,"limites":{"tazasMax":6,"aguaMaxG":1500,"cafeMaxG":90}},
+  {"id":"aeropress","nombreKey":"method.aeropress.name","descripcionKey":"method.aeropress.desc","icono":"aeropress","moliendaKey":"grind.fina-media","orden":3,"limites":{"tazasMax":1,"aguaMaxG":250,"cafeMaxG":22}},
+  {"id":"prensa-francesa","nombreKey":"method.prensa.name","descripcionKey":"method.prensa.desc","icono":"prensa","moliendaKey":"grind.gruesa","orden":4,"limites":{"tazasMax":4,"aguaMaxG":1000,"cafeMaxG":60}}
+]

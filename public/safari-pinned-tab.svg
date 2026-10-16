@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Safari pinned tab: monochrome only, black silhouette on transparent -->
+  <g fill="#000000">
+    <path d="M84 168 L194 308 L318 308 L428 168 L407 168 L305 288 L207 288 L105 168 Z"/>
+    <ellipse cx="256" cy="168" rx="172" ry="38"/>
+    <rect x="246" y="308" width="20" height="52" rx="10"/>
+    <path d="M256 352 C282 388 304 412 304 440 A48 48 0 1 1 208 440 C208 412 230 388 256 352 Z"/>
+  </g>
+</svg>
