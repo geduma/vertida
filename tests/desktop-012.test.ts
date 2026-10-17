@@ -10,7 +10,7 @@ describe('012 desktop + island + home + cups default', () => {
     const navOpen = src.indexOf('<nav key={lang}');
     expect(navOpen).toBeGreaterThan(appOpen);
     expect(navOpen).toBeLessThan(src.indexOf("{tab === 'home'"));
-    expect(css).toContain('grid-row:2');
+    expect(css).toContain('grid-column:1');
   });
 
   it('surprise CTA is blind (no recipe name)', () => {

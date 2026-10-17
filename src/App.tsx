@@ -8,7 +8,6 @@ import { db } from './lib/db';
 import { exchangeSession, getProviders, getSession, logout, readCallbackToken, startLogin, type LocalSession } from './lib/auth';
 import es from './i18n/es.json';
 import en from './i18n/en.json';
-import Toggle from './components/Toggle';
 import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
@@ -81,6 +80,7 @@ export default function App() {
   const [ratio, setRatio] = useState<number | ''>(recipe.ratio);
   const [advanced, setAdvanced] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [phaseFlash, setPhaseFlash] = useState(false);
   const [step, setStep] = useState<BrewStep>('summary');
   const [session, setSession] = useState<LocalSession | null>(null);
   const [providers, setProviders] = useState<string[]>([]);
@@ -91,6 +91,7 @@ export default function App() {
   const [favOnly, setFavOnly] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
   const timer = useTimer(recipe.fases, muted, recipeId);
+  const lastIdxRef = useRef(timer.idx);
 
   const clampN = (v: number | '', min: number, max: number, fb: number) =>
     v === '' || !Number.isFinite(v) ? fb : Math.min(max, Math.max(min, v));
@@ -140,6 +141,14 @@ export default function App() {
     getProviders().then(setProviders).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (timer.idx !== lastIdxRef.current) {
+      lastIdxRef.current = timer.idx;
+      setPhaseFlash(true);
+      setTimeout(() => setPhaseFlash(false), 150);
+    }
+  }, [timer.idx]);
+
   const progress = timer.state === 'done' ? 100 : Math.min(99, Math.round(((totalTime * 1000 - timer.leftMs) / (totalTime * 1000 || 1)) * 100));
 
   return (
@@ -178,7 +187,7 @@ export default function App() {
                   <div><h2>{t('home.methods')}</h2></div>
                 </div>
                 <div className="method-row">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
-                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nombreKey)}>
+                  <button key={m.id} type="button" className="method-card reveal" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nombreKey)}>
                     <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icono} size={30} /></span>
                     <span className="method-name">{t(m.nombreKey)}</span>
                     <span className="hero-meta">{m.limites ? `${m.limites.tazasMax} · ${m.limites.aguaMaxG}g` : ''}</span>
@@ -205,7 +214,7 @@ export default function App() {
         {tab === 'brew' && (
           <section aria-label={t('brew.section')}>
             {step === 'summary' && (
-              <>
+              <div className="brew-screen screen-enter">
                 <div className="hero">
                   <button type="button" className="back-link" onClick={() => { timer.reset(); setTab(originTab); setStep('summary'); }}>‹ {t(originTab === 'home' ? 'nav.home' : originTab === 'recipes' ? 'nav.recipes' : 'nav.settings')}</button>
                   <h2>{recipeDisplayName(recipe, t)}</h2>
@@ -226,10 +235,10 @@ export default function App() {
                   {advanced && <p className="hero-meta">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
                   <button type="button" className="cta" onClick={() => setStep('preview')}>{t('app.start')}</button>
                 </div>
-              </>
+              </div>
             )}
             {step === 'preview' && (
-              <div className="surface">
+              <div className="surface screen-enter">
                 <button type="button" className="back-link" onClick={() => setStep('summary')}>‹ {t('app.back')}</button>
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
                 <ol>{recipe.fases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instruccionKey)} — {f.aguaAcumuladaG} g · {f.duracionS}s {f.tipo === 'manual' ? '· manual' : ''}</li>)}</ol>
@@ -242,9 +251,9 @@ export default function App() {
               const fase = recipe.fases[timer.idx] ?? recipe.fases[0];
               const faseNext = recipe.fases[timer.idx + 1];
               return (
-              <div className="surface timer-col" aria-live="polite">
+              <div className="surface timer-col screen-enter" aria-live="polite">
                 <button type="button" className="back-link" onClick={() => { timer.reset(); setStep('summary'); }}>‹ {t('brew.recipe')}</button>
-                <div className="phase-dots" aria-hidden="true">{recipe.fases.map((_, i) => <i key={i} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
+                <div className="phase-dots" aria-hidden="true">{recipe.fases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
                 <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b>{Math.ceil(timer.leftMs / 1000)}s</b></div></div>
                 <h2 className="mega">{fase.aguaAcumuladaG} g</h2>
                 <p><b>{t(fase.instruccionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.fases.length)}/{recipe.fases.length}</p>
@@ -261,7 +270,7 @@ export default function App() {
               );
             })()}
             {step === 'done' && (
-              <div className="surface">
+              <div className="surface screen-enter">
                 <h2>{t('timer.ready')}</h2>
                 <p>{recipeDisplayName(recipe, t)} · {water} g</p>
                 <div className="form-actions">
@@ -284,12 +293,10 @@ export default function App() {
               </div>
               <button ref={createBtnRef} type="button" className="cta cta-compact" onClick={() => setCreateOpen(true)}>{t('recipes.new')}</button>
             </div>
-            {filterMethodId && (
-              <div className="segmented" role="radiogroup" aria-label={t('recipes.title')}>
-                <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFilterMethodId(null); setFavOnly(false); }}>{t('recipes.all')}</button>
-                <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
-              </div>
-            )}
+            <div className="segmented" role="radiogroup" aria-label={t('recipes.title')}>
+              <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFilterMethodId(null); setFavOnly(false); }}>{t('recipes.all')}</button>
+              <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
+            </div>
             {(() => {
               const base = (favOnly ? visibleClassics.filter(r => favIds.includes(r.id)) : visibleClassics).filter(r => filterMethodId ? r.methodId === filterMethodId : true);
               if (base.length === 0)
@@ -309,7 +316,7 @@ export default function App() {
                 return (
                   <article
                     key={r.id}
-                    className="recipe-card"
+                    className="recipe-card reveal"
                     role="button"
                     tabIndex={0}
                     aria-label={`${t('brew.prepare')}: ${name}`}
@@ -341,16 +348,49 @@ export default function App() {
                   </article>
                 );
               };
-              return <>{groups.map(g => (
-                <div key={g.m.id} className="method-group">
-                  <div className="method-group-head">
-                    <span className="equip-icon equip-icon-sm" aria-hidden="true"><EquipmentIcon id={g.m.icono} size={28} /></span>
-                    <h3>{t(g.m.nombreKey)}</h3>
-                    <p className="hero-meta">{g.items.length}</p>
-                  </div>
-                  <div className="recipes-list">{g.items.map(renderCard)}</div>
+              const cards = groups.flatMap(g => g.items);
+              return (
+                <div className="recipes-list">
+                  {cards.map(r => {
+                    const m = cat.methods.find(x => x.id === r.methodId);
+                    return (
+                      <article
+                        key={r.id}
+                        className="recipe-card reveal"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${t('brew.prepare')}: ${recipeDisplayName(r, t)}`}
+                        onClick={() => brewRecipe(r, 'recipes')}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
+                      >
+                        {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nombreKey)}</p>}
+                        <h3>{recipeDisplayName(r, t)}</h3>
+                        <p className="hero-meta">1:{r.ratio} · {r.cafeDefaultG}g · {r.fases.length} fases · ~{Math.max(1, Math.round(r.fases.reduce((a, f) => a + f.duracionS, 0) / 60))} min{(r.dificultad ? ` · ${r.dificultad}` : '')}</p>
+                        {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
+                        {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
+                        {(r as CustomRecipe).custom && (
+                          <div>
+                            <button
+                              type="button"
+                              className="card-delete"
+                              aria-label={`${t('recipes.delete')} ${recipeDisplayName(r, t)}`}
+                              onClick={(e) => { e.stopPropagation(); const next = customs.filter(x => x.id !== r.id); setCustoms(next); saveCustomRecipes(next); }}
+                            >{t('recipes.delete')}</button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="fav-btn"
+                          data-on={favIds.includes(r.id) ? 'true' : 'false'}
+                          aria-pressed={favIds.includes(r.id)}
+                          aria-label={`${t('recipes.favorite')}: ${recipeDisplayName(r, t)}`}
+                          onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
+                        >{favIds.includes(r.id) ? '♥' : '♡'}</button>
+                      </article>
+                    );
+                  })}
                 </div>
-              ))}</>;
+              );
             })()}
             <RecipeCreateModal
               open={createOpen}
@@ -396,7 +436,9 @@ export default function App() {
             <div className="setting-row setting-row-theme"><span className="setting-label">{t('settings.theme')}<small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
               <button key={m} type="button" role="radio" aria-checked={themeMode === m} data-on={themeMode === m ? 'true' : 'false'} onClick={() => setThemeMode(m)}>{m === 'light' ? t('settings.light') : m === 'dark' ? t('settings.dark') : t('settings.auto')}</button>
             ))}</div><small className="theme-current">{t('settings.themeCurrent')}: {themeMode === 'light' ? t('settings.light') : themeMode === 'dark' ? t('settings.dark') : `${t('settings.auto')} · ${resolvedTheme === 'dark' ? t('settings.dark') : t('settings.light')}`}</small></div></div>
-            <div className="setting-row"><span className="setting-label">{t('settings.advanced')}<small>{t('settings.advancedDesc')}</small></span><Toggle checked={advanced} onChange={setAdvanced} label={t('settings.advanced')} onText="On" offText="Off" /></div>
+            <div className="setting-row"><span className="setting-label">{t('settings.advanced')}<small>{t('settings.advancedDesc')}</small></span><div className="segmented" role="radiogroup" aria-label={t('settings.advanced')}>{['On', 'Off'].map(v => (
+              <button key={v} type="button" role="radio" aria-checked={advanced === (v === 'On')} data-on={advanced === (v === 'On') ? 'true' : 'false'} onClick={() => setAdvanced(v === 'On')}>{v}</button>
+            ))}</div></div>
             <div className="setting-row"><span className="setting-label">{t('settings.equipment')}<small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
             <EquipmentModal
               open={equipOpen}

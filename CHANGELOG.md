@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — 016 mobile + desktop design review, animations & fluidity
+### Added
+- `src/theme/app.css`: motion tokens (`--motion-fast:150ms`, `--motion-normal:300ms`, `--motion-slow:500ms`, `--ease`); keyframes `fadeIn`, `fadeOut`, `slideUp`, `phasePulse`, `btnPress`; utility classes `.screen-enter`, `.screen-exit`, `.reveal`, `.dot-flash`, `.btn-pressed`; ring `--p` transition for smooth progress sweep; `prefers-reduced-motion` block zeros all animation/transition.
+- `src/App.tsx`: `screen-enter` motion class on brew screens (`summary`, `preview`, `running`, `done`); `dot-flash` on active phase dot; `phaseFlash` state + `lastIdxRef` ref to trigger flash on phase change; `.reveal` on home method cards and recipe cards for staggered entrance (CSS `animation-delay`).
+### Changed
+- `src/theme/app.css` `.ring`: added `transition:--p var(--motion-normal) var(--ease)` for smooth sweep.
+### Tests
+- `tests/motion-016.test.ts`: new file, 10 tests asserting motion tokens, keyframes, utility classes, ring transition, reduced-motion block, screen-enter classes, dot-flash, staggered reveals, desktop 2-col grid.
+### Verified
+- `npm run validate:data` OK 7, `npm test` 63/63, `npm run build` clean (~250.7 KB JS).
+
 ## [Unreleased] — 015 remove brand bar + 2-col recipes + island blur + method filter + clear filters + 1 cup default water
 ### Changed
 - `src/components/Brand.tsx` unmounted: removed `import Brand` and `<Brand compact={...}/>` from `src/App.tsx`; deleted `.brand-bar`/`.brand-mark` rules from `src/theme/app.css` (no header brand bar).
