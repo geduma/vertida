@@ -106,6 +106,7 @@
   "recipes.fieldNotesPh": "Medium grind, water at 92°…",
   "recipes.customBadge": "homemade",
   "recipes.delete": "Delete",
+  "recipes.filterBy": "Filtered by {metodo}",
   "recipes.all": "All",
   "recipes.favorites": "Favorites",
   "recipes.favorite": "Like",

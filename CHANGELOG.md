@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — 015 remove brand bar + 2-col recipes + island blur + method filter + clear filters + 1 cup default water
+### Changed
+- `src/components/Brand.tsx` unmounted: removed `import Brand` and `<Brand compact={...}/>` from `src/App.tsx`; deleted `.brand-bar`/`.brand-mark` rules from `src/theme/app.css` (no header brand bar).
+- `src/theme/app.css` recipes: desktop `.recipes-list` `repeat(3)` → `repeat(2)`; removed `@media(max-width:359px)` 1-col collapses so recipes stay 2 columns always.
+- `src/theme/app.css` island: removed `mask-image` from `.tabbar` (was making the pill invisible); keeps `backdrop-filter:blur(24px)` glass effect, scroll unchanged, content behind is blurred by the island backdrop.
+- `src/App.tsx`: home method cards set `filterMethodId` then open Recipes; Recipes list filters by `filterMethodId`; filter indicator shown in section head. Removed separate "Clear filters" button: the `Todas|Favoritas` segmented only renders when arriving with a method filter; clicking `Todas` clears the method filter.
+- `src/App.tsx` recipe cards: removed method icon + method name badge (cards are grouped by method, redundant).
+- `src/App.tsx` `brewRecipe`: default water is now `CONFIG.gramsPerCup` (1 taza = 210 g) clamped to `aguaMaxG`, instead of `cafeDefaultG * ratio`.
+- `src/i18n/es.json` + `en.json`: added `recipes.filterBy`; removed `recipes.clearFilters`.
+### Tests
+- `tests/brand-014.test.ts`: "brand mark mounted" → "brand bar removed from app" (asserts no Brand import, no `.brand-bar`/`.brand-mark` in CSS).
+- `tests/desktop-012.test.ts`: dropped `.brand-bar{grid-column:...}` assertion (brand bar deleted); method-card `onClick` now asserts `setFilterMethodId(m.id); setTab('recipes')`.
+### Verified
+- `npm run validate:data` OK 7, `npm test` 53/53, `npm run build` clean (~251KB JS).
+
 ## [Unreleased] — 014 logo redesign + in-app brand
 ### Added
 - `src/components/Brand.tsx`: mark-only 32px brand (`brand-bar`, hidden in brew `running`); mounted in `src/App.tsx` before the tabbar.
