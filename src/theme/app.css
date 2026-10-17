@@ -47,7 +47,7 @@ label>select,label>input{width:100%;min-height:var(--input-h)}
 .back-link:hover{color:var(--ink)}
 /* Favorites heart */
 .recipe-card{position:relative}
-.fav-btn{position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:44px;border-radius:50%;border:1px solid var(--border);background:color-mix(in srgb, var(--surface) 82%, transparent);color:var(--muted);font-size:18px;display:grid;place-items:center;padding:0;flex:none}
+.fav-btn{position:absolute;bottom:8px;right:8px;width:44px;height:44px;min-height:44px;border-radius:50%;border:1px solid var(--border);background:color-mix(in srgb, var(--surface) 82%, transparent);color:var(--muted);font-size:18px;display:grid;place-items:center;padding:0;flex:none}
 .fav-btn[data-on='true']{color:var(--accent);border-color:var(--accent)}
 .is-hidden{display:none!important}
 .grid-2{display:grid;gap:12px;grid-template-columns:1fr}
