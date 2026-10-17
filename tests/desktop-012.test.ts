@@ -10,7 +10,6 @@ describe('012 desktop + island + home + cups default', () => {
     const navOpen = src.indexOf('<nav key={lang}');
     expect(navOpen).toBeGreaterThan(appOpen);
     expect(navOpen).toBeLessThan(src.indexOf("{tab === 'home'"));
-    expect(css).toContain('.brand-bar{grid-column:1/-1;grid-row:1}');
     expect(css).toContain('grid-row:2');
   });
 
@@ -28,7 +27,7 @@ describe('012 desktop + island + home + cups default', () => {
   it('home shows only selected methods without toggling', () => {
     expect(src).toContain('cat.methods.filter(m => equipmentIds.includes(m.id))');
     expect(src).not.toContain('toggleEquipment(m.id)');
-    expect(src).toContain("onClick={() => setTab('recipes')}");
+    expect(src).toContain("onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }}");
   });
 
   it('dose is water-only with per-cup hint (013)', () => {

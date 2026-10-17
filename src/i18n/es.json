@@ -106,6 +106,7 @@
   "recipes.fieldNotesPh": "Molienda media, agua a 92°…",
   "recipes.customBadge": "casera",
   "recipes.delete": "Borrar",
+  "recipes.filterBy": "Filtrado por {metodo}",
   "recipes.all": "Todas",
   "recipes.favorites": "Favoritas",
   "recipes.favorite": "Me gusta",
