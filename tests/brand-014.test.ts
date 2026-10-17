@@ -49,13 +49,11 @@ describe('014 logo redesign + brand in app', () => {
     expect(icon).toContain('linearGradient');
   });
 
-  it('brand mark is mounted in the app and hidden while running', () => {
-    expect(src).toContain("import Brand from './components/Brand'");
-    expect(src).toContain('<Brand compact={');
-    expect(brand).toContain('brand-bar');
-    expect(brand).toContain('brand-mark');
-    expect(css).toContain('.brand-bar{');
-    expect(css).toContain('.brand-mark{');
+  it('brand bar removed from app (header brand-bar deleted)', () => {
+    expect(src).not.toContain("import Brand from './components/Brand'");
+    expect(src).not.toContain('<Brand compact={');
+    expect(css).not.toContain('.brand-bar{');
+    expect(css).not.toContain('.brand-mark{');
   });
 
   it('all platform references use the near-black tile color', () => {
