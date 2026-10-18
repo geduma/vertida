@@ -47,16 +47,18 @@ describe('016 mobile + desktop design, animations & fluidity', () => {
     expect(src).toContain('phaseFlash');
   });
 
-  it('home method cards use staggered reveal', () => {
-    expect(src).toContain('className="method-card reveal"');
+  it('home method cards render visible on mount (no reveal animation)', () => {
+    expect(src).toContain('className="method-card"');
+    expect(src).not.toContain('className="method-card reveal"');
   });
 
-  it('recipe cards use staggered reveal', () => {
-    expect(src).toContain('className="recipe-card reveal"');
+  it('recipe cards render visible on mount (no reveal animation)', () => {
+    expect(src).toContain('className="recipe-card"');
+    expect(src).not.toContain('className="recipe-card reveal"');
   });
 
-  it('desktop keeps recipes in 2-col grid and tabbar sidebar', () => {
-    expect(css).toContain('.recipes-list{grid-template-columns:repeat(2,minmax(0,1fr))}');
+  it('desktop keeps recipes in grid and tabbar sidebar', () => {
+    expect(css).toContain('.recipes-list{grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))}');
     expect(css).toContain('grid-column:1');
   });
 });

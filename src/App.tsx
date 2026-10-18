@@ -5,7 +5,6 @@ import { loadCatalog } from './lib/loadData';
 import { calcCoffee, isRatioWarn } from './lib/calc';
 import { useTimer } from './lib/useTimer';
 import { db } from './lib/db';
-import { exchangeSession, getProviders, getSession, logout, readCallbackToken, startLogin, type LocalSession } from './lib/auth';
 import es from './i18n/es.json';
 import en from './i18n/en.json';
 import EquipmentModal from './components/EquipmentModal';
@@ -59,12 +58,6 @@ export default function App() {
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
   }, [themeMode]);
-  useEffect(() => {
-    const tk = readCallbackToken();
-    if (tk) exchangeSession(tk).then(setSession).catch(() => setAuthErr(true));
-    getSession().then(s => s && setSession(s));
-  }, []);
-
   const [tab, setTab] = useState<Tab>('home');
   const [originTab, setOriginTab] = useState<OriginTab>('home');
   const [equipmentIds, setEquipmentIds] = useState<string[]>([...CONFIG.equipment]);
@@ -82,9 +75,6 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [phaseFlash, setPhaseFlash] = useState(false);
   const [step, setStep] = useState<BrewStep>('summary');
-  const [session, setSession] = useState<LocalSession | null>(null);
-  const [providers, setProviders] = useState<string[]>([]);
-  const [authErr, setAuthErr] = useState(false);
   const [equipOpen, setEquipOpen] = useState(false);
   const equipBtnRef = useRef<HTMLButtonElement>(null);
   const [favIds, setFavIds] = useState<string[]>(() => loadFavorites());
@@ -138,10 +128,6 @@ export default function App() {
     db().then(d => equipmentIds.forEach(id => d.put('equipment', { id }))).catch(() => {});
   }, [equipmentIds]);
   useEffect(() => {
-    getProviders().then(setProviders).catch(() => {});
-  }, []);
-
-  useEffect(() => {
     if (timer.idx !== lastIdxRef.current) {
       lastIdxRef.current = timer.idx;
       setPhaseFlash(true);
@@ -153,7 +139,7 @@ export default function App() {
 
   return (
     <div>
-      <div className="app">
+      <div className={`app${tab === 'brew' && step === 'running' ? ' brew-running' : ''}`}>
         <nav key={lang} className={`tabbar${tab === 'brew' && step === 'running' ? ' is-hidden' : ''}`} role="tablist" aria-label={t('nav.label')}>
           {TABS.map(({ id, labelKey }) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'recipes') setFavOnly(false); setStep('summary'); }}>{t(labelKey)}</button>
@@ -187,7 +173,7 @@ export default function App() {
                   <div><h2>{t('home.methods')}</h2></div>
                 </div>
                 <div className="method-row">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
-                  <button key={m.id} type="button" className="method-card reveal" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nombreKey)}>
+                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nombreKey)}>
                     <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icono} size={30} /></span>
                     <span className="method-name">{t(m.nombreKey)}</span>
                     <span className="hero-meta">{m.limites ? `${m.limites.tazasMax} · ${m.limites.aguaMaxG}g` : ''}</span>
@@ -316,7 +302,7 @@ export default function App() {
                 return (
                   <article
                     key={r.id}
-                    className="recipe-card reveal"
+                    className="recipe-card"
                     role="button"
                     tabIndex={0}
                     aria-label={`${t('brew.prepare')}: ${name}`}
@@ -351,44 +337,55 @@ export default function App() {
               const cards = groups.flatMap(g => g.items);
               return (
                 <div className="recipes-list">
-                  {cards.map(r => {
-                    const m = cat.methods.find(x => x.id === r.methodId);
-                    return (
-                      <article
-                        key={r.id}
-                        className="recipe-card reveal"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${t('brew.prepare')}: ${recipeDisplayName(r, t)}`}
-                        onClick={() => brewRecipe(r, 'recipes')}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
-                      >
-                        {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nombreKey)}</p>}
-                        <h3>{recipeDisplayName(r, t)}</h3>
-                        <p className="hero-meta">1:{r.ratio} · {r.cafeDefaultG}g · {r.fases.length} fases · ~{Math.max(1, Math.round(r.fases.reduce((a, f) => a + f.duracionS, 0) / 60))} min{(r.dificultad ? ` · ${r.dificultad}` : '')}</p>
-                        {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
-                        {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
-                        {(r as CustomRecipe).custom && (
-                          <div>
-                            <button
-                              type="button"
-                              className="card-delete"
-                              aria-label={`${t('recipes.delete')} ${recipeDisplayName(r, t)}`}
-                              onClick={(e) => { e.stopPropagation(); const next = customs.filter(x => x.id !== r.id); setCustoms(next); saveCustomRecipes(next); }}
-                            >{t('recipes.delete')}</button>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          className="fav-btn"
-                          data-on={favIds.includes(r.id) ? 'true' : 'false'}
-                          aria-pressed={favIds.includes(r.id)}
-                          aria-label={`${t('recipes.favorite')}: ${recipeDisplayName(r, t)}`}
-                          onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
-                        >{favIds.includes(r.id) ? '♥' : '♡'}</button>
-                      </article>
-                    );
-                  })}
+                  {groups.map(g => (
+                    <div key={g.m.id} className="method-group">
+                      <div className="method-group-head">
+                        <span className="equip-icon equip-icon-sm" aria-hidden="true"><EquipmentIcon id={g.m.icono} size={28} /></span>
+                        <h3>{t(g.m.nombreKey)}</h3>
+                        <p className="hero-meta">{g.items.length}</p>
+                      </div>
+                      <div className="recipes-list">
+                        {g.items.map(r => {
+                          const m = cat.methods.find(x => x.id === r.methodId);
+                          return (
+                            <article
+                              key={r.id}
+                              className="recipe-card"
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`${t('brew.prepare')}: ${recipeDisplayName(r, t)}`}
+                              onClick={() => brewRecipe(r, 'recipes')}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
+                            >
+                              {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nombreKey)}</p>}
+                              <h3>{recipeDisplayName(r, t)}</h3>
+                              <p className="hero-meta">1:{r.ratio} · {r.cafeDefaultG}g · {r.fases.length} fases · ~{Math.max(1, Math.round(r.fases.reduce((a, f) => a + f.duracionS, 0) / 60))} min{(r.dificultad ? ` · ${r.dificultad}` : '')}</p>
+                              {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
+                              {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
+                              {(r as CustomRecipe).custom && (
+                                <div>
+                                  <button
+                                    type="button"
+                                    className="card-delete"
+                                    aria-label={`${t('recipes.delete')} ${recipeDisplayName(r, t)}`}
+                                    onClick={(e) => { e.stopPropagation(); const next = customs.filter(x => x.id !== r.id); setCustoms(next); saveCustomRecipes(next); }}
+                                  >{t('recipes.delete')}</button>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                className="fav-btn"
+                                data-on={favIds.includes(r.id) ? 'true' : 'false'}
+                                aria-pressed={favIds.includes(r.id)}
+                                aria-label={`${t('recipes.favorite')}: ${recipeDisplayName(r, t)}`}
+                                onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
+                              >{favIds.includes(r.id) ? '♥' : '♡'}</button>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })()}
@@ -450,10 +447,7 @@ export default function App() {
               returnFocusRef={equipBtnRef}
             />
             <div>
-              <p>{t('settings.session')} {session ? `${session.displayName} (${session.email})` : t('settings.guest')}</p>
-              {!session ? providers.map(p => <button type="button" className="btn-secondary" key={p} onClick={() => startLogin(p)}>Login {p}</button>) : <button type="button" className="btn-secondary" onClick={() => logout().then(() => setSession(null))}>Logout</button>}
-              {authErr && <p>{t('settings.authError')}</p>}
-              {providers.length === 0 && !session && <p className="next">{t('settings.noProviders')}</p>}
+              <p className="next">{t('settings.localOnly')}</p>
             </div>
           </section>
         )}
