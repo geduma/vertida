@@ -467,3 +467,102 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
   button:hover:not(:active){opacity:0.92}
   .cta:hover:not(:active){opacity:0.9;filter:brightness(1.05)}
 }
+
+/* Landing de bienvenida — sin scroll, todo en 100dvh, mobile y desktop */
+.landing{
+  min-height:100dvh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  background:var(--bg);
+  overflow:hidden;
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+  box-sizing:border-box;
+  position:relative;
+}
+.landing-glass{
+  position:absolute;
+  inset:0;
+  background:color-mix(in srgb, var(--surface) 70%, transparent);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);
+  backdrop-filter:blur(20px) saturate(150%);
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:32px;
+  margin:20px 20px calc(20px + env(safe-area-inset-bottom));
+  z-index:0;
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .landing-glass{background:var(--surface)}
+}
+.landing-content{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:28px;
+  width:100%;
+  max-width:340px;
+  padding:0 32px;
+}
+.landing-mark{
+  margin-bottom:4px;
+}
+.landing-mark svg{
+  width:48px;
+  height:48px;
+  color:var(--ink);
+}
+.landing-title{
+  font-size:clamp(24px, 7vw, 38px);
+  font-weight:800;
+  line-height:1.15;
+  letter-spacing:-.01em;
+  margin:0 0 8px;
+  text-wrap:balance;
+  color:var(--ink);
+}
+.landing-subtitle{
+  font-size:17px;
+  line-height:1.5;
+  color:var(--muted);
+  margin:0 0 24px;
+  max-width:none;
+}
+.landing-cta{
+  width:100%;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+@media(min-width:1024px){
+  .landing{
+    padding:40px 40px 64px;
+  }
+  .landing-glass{
+    border-radius:40px;
+    margin:40px 40px 64px;
+  }
+  .landing-content{
+    max-width:520px;
+    gap:32px;
+    padding:0 48px;
+  }
+  .landing-mark svg{
+    width:64px;
+    height:64px;
+  }
+  .landing-title{
+    font-size:clamp(36px, 6vw, 52px);
+    margin-bottom:10px;
+  }
+  .landing-subtitle{
+    font-size:20px;
+    max-width:42ch;
+    margin-bottom:28px;
+  }
+  .landing-cta{
+    width:auto;
+    min-width:220px;
+  }
+}
