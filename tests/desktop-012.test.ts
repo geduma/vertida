@@ -34,7 +34,7 @@ describe('012 desktop + island + home + cups default', () => {
     expect(src).not.toContain('waterMode');
     expect(src).not.toContain('calc.byCups');
     expect(src).toContain('data-testid="coffee-from-water"');
-    expect(src).toContain('calc.cupEq');
+    expect(src).toContain('calc.waterTotal');
   });
 
   it('tighter spacing (less empty scroll)', () => {

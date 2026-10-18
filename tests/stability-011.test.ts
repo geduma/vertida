@@ -11,8 +11,9 @@ describe('011 brew back + limits + island + home + favorites', () => {
   });
 
   it('single-value limits disable the input (013 water-only)', () => {
-    expect(src).toContain('disabled={waterMaxG === 1}');
-    expect(src).toContain('disabled={ratioMin === ratioMax}');
+    expect(src).toContain('disabled={cupsMax === 1}'); // water is now a cups slider (023); aeropress cupsMax===1 -> disabled
+    expect(src).toContain('disabled={ratioMin === ratioMax || ratioN <= ratioMin}');
+    expect(src).toContain('disabled={ratioMin === ratioMax || ratioN >= ratioMax}');
   });
 
   it('dose inputs share one uniform grid', () => {

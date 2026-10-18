@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — 023 brew water-cups slider + ratio step buttons
+### Changed
+- `src/App.tsx`: brew `summary` water input replaced by a cups range slider (`min=1`, `max=cupsMax`, `step=1`, default `1`, `disabled` when `cupsMax === 1`); water grams derived as `cups × gramsPerCup` clamped to `aguaMaxG`. Ratio text input replaced by `-` / `+` buttons (0.5 step, clamped to method `ratioMin`/`ratioMax`, default `recipe.ratio`); `brewRecipe` and method/recipe selects reset `cups = 1` and `ratio = recipe.ratio`.
+- `src/i18n/es.json`, `src/i18n/en.json`: added `calc.waterCups` and `calc.cupsSelected`.
+- `src/theme/app.css`: `.cups-slider` — track `var(--surface2)`, fill/thumb `var(--accent)`, border `var(--border)`; thumb como círculo/cilindro centrado sobre la track (`translateY(-50%)`); `width:100%` en móvil y desktop (todo el ancho del área de dosis); fill progresivo al 100% en el máximo (Aeropress 1 taza = barra llena); estado `disabled` grisáceo. Ratio: texto `input number` reemplazado por stepper compacto `-` `{ratio}` `+` (paso 0.5, clamp a `ratioMin`/`ratioMax`, botones desactivados en los límites), claves `calc.ratioMinus`/`calc.ratioPlus`.
+- `src/i18n/es.json`, `src/i18n/en.json`: añadidas `calc.waterTotal` (`{g} g de agua` / `{g} g water`), `calc.ratioMinus`, `calc.ratioPlus`; readout de agua ahora muestra conteo de tazas + gramos totales en lugar de `calc.cupEq`.
+### Tests
+- `tests/brew-water-cups-ratio-023.test.ts`: new file, 4 tests (slider range/disabled/readout, ratio +/- buttons, no text inputs, derived water).
+- `tests/stability-011.test.ts`: updated `disabled={waterMaxG === 1}` → `disabled={cupsMax === 1}` (intentional, matches 023 water slider).
+### Verified
+- `npx tsc -b` clean, `npx vitest run` 75/75, `npm run build` clean (~246 KB JS).
+
 ## [Unreleased] — 022 remove auth (MVP local-only)
 ### Removed
 - `src/lib/auth.ts`: deleted entire Geduma Auth module (`getProviders`, `startLogin`, `readCallbackToken`, `exchangeSession`, `getSession`, `logout`, `LocalSession`).

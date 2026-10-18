@@ -30,7 +30,7 @@ describe('013 discover modal + grouped recipes + water-only dose + timer', () =>
 
   it('dose has no base selector and shows per-cup equivalence', () => {
     expect(src).not.toContain('calc.base');
-    expect(src).toContain('calc.cupEq');
+    expect(src).toContain('calc.waterTotal');
     expect(src).toContain('className="dosis-grid"');
   });
 

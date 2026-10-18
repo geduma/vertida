@@ -69,7 +69,7 @@ export default function App() {
   const allClassics = useMemo(() => [...cat.recipes, ...customs], [cat, customs]);
   const [recipeId, setRecipeId] = useState(cat.recipes[0].id);
   const recipe = [...allClassics, ...cat.discovery].find(r => r.id === recipeId) ?? cat.recipes[0];
-  const [waterG, setWaterG] = useState<number | ''>(recipe.coffeeDefaultG * recipe.ratio);
+  const [cups, setCups] = useState<number>(1);
   const [ratio, setRatio] = useState<number | ''>(recipe.ratio);
   const [advanced, setAdvanced] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -85,13 +85,15 @@ export default function App() {
 
   const clampN = (v: number | '', min: number, max: number, fb: number) =>
     v === '' || !Number.isFinite(v) ? fb : Math.min(max, Math.max(min, v));
+  const adjustRatio = (delta: number) =>
+    setRatio((c) => clampN((c === '' ? ratioN : c) + delta, ratioMin, ratioMax, 16));
   const limitsFor = (id: string) => cat.methods.find(m => m.id === id)?.limits;
   const methodLimits = limitsFor(methodId);
   const cupsMax = methodLimits?.cupsMax ?? CONFIG.cupsMax;
   const waterMaxG = methodLimits?.waterMaxG ?? CONFIG.waterMaxG;
   const ratioMin = methodLimits?.ratioMin ?? 1;
   const ratioMax = methodLimits?.ratioMax ?? 50;
-  const waterGN = clampN(waterG, 1, waterMaxG, Math.min(240, waterMaxG));
+  const waterGN = clampN(cups * CONFIG.gramsPerCup, 1, waterMaxG, Math.min(240, waterMaxG));
   const ratioN = clampN(ratio, ratioMin, ratioMax, 16);
   const water = waterGN;
   const coffeeEff = calcCoffee(water, ratioN);
@@ -106,7 +108,7 @@ export default function App() {
     const lim = limitsFor(r.methodId);
     const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
     setRecipeId(r.id); setMethodId(r.methodId);
-    setWaterG(Math.min(CONFIG.gramsPerCup, wmax));
+    setCups(1);
     setRatio(r.ratio); setOriginTab(origin); setStep('summary'); setTab('brew');
   };
   const favKey = favIds.join(',');
@@ -208,17 +210,71 @@ export default function App() {
                 </div>
                 <div className="surface">
                   <div className="grid-2">
-                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setWaterG(Math.min(r.coffeeDefaultG * r.ratio, wmax)); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
+                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setCups(1); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
                     <label>{t('brew.recipe')} <select value={recipeId} onChange={e => setRecipeId(e.target.value)}>{visible.filter(r => r.methodId === methodId).map(r => <option key={r.id} value={r.id}>{recipeDisplayName(r, t)}</option>)}</select></label>
                   </div>
                   <div className="dosis-grid">
-                    <label>{t('calc.water')}<input type="number" value={waterG} min={1} max={waterMaxG} step={1} disabled={waterMaxG === 1} onChange={e => setWaterG(e.target.value === '' ? '' : +e.target.value)} onBlur={() => setWaterG(c => clampN(c, 1, waterMaxG, Math.min(240, waterMaxG)))} /><span className="next">{t('calc.cupEq')}</span></label>
-                    <label>{t('calc.ratio')}<input type="number" value={ratio} min={ratioMin} max={ratioMax} step={0.5} disabled={ratioMin === ratioMax} onChange={e => setRatio(e.target.value === '' ? '' : +e.target.value)} onBlur={() => setRatio(r => clampN(r, ratioMin, ratioMax, 16))} /></label>
+                    <label className="cups-label" style={{ gridColumn: '1 / -1' }}>
+                      {t('calc.waterCups')}
+                      <span className="next">{t('calc.cupsSelected').replace('{n}', String(cups))} · {t('calc.waterTotal').replace('{g}', String(waterGN))}</span>
+                      <span className="cups-wrap">
+                        {cupsMax === 1 ? (
+                          <>
+                            <div className="cups-bar-full" />
+                            <span className="cups-thumb-end" aria-hidden="true" />
+                          </>
+                        ) : (
+                          <input
+                            type="range"
+                            className="cups-slider"
+                            min={1}
+                            max={cupsMax}
+                            step={1}
+                            value={cups}
+                            disabled={cupsMax === 1}
+                            onChange={e => setCups(+e.target.value)}
+                            style={{
+                              '--fill': `${((cups - 1) / (cupsMax - 1)) * 100}%`
+                            } as React.CSSProperties}
+                          />
+                        )}
+                      </span>
+                    </label>
+                    <label className="ratio-label" style={{ gridColumn: '1 / -1' }}>
+                      {t('calc.ratio').replace('N', String(ratioN))}
+                      <div className="ratio-stepper">
+                        <button
+                          type="button"
+                          onClick={() => adjustRatio(-0.5)}
+                          disabled={ratioMin === ratioMax || ratioN <= ratioMin}
+                          aria-label={t('calc.ratioMinus')}
+                        >
+                          -
+                        </button>
+                        <span className="ratio-value">{ratioN}</span>
+                        <button
+                          type="button"
+                          onClick={() => adjustRatio(0.5)}
+                          disabled={ratioMin === ratioMax || ratioN >= ratioMax}
+                          aria-label={t('calc.ratioPlus')}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </label>
                   </div>
-                  <p className="next" data-testid="method-limit-hint">{t('method.limitHint').replace('{tazas}', String(cupsMax)).replace('{agua}', String(waterMaxG)).replace('{metodo}', t(cat.methods.find(m => m.id === methodId)?.nameKey ?? methodId))}</p>
-                  <p className="next" data-testid="coffee-from-water">{t('calc.coffeeFromWater').replace('{g}', String(coffeeEff))}</p>
-                  {isRatioWarn(ratioN) && <p><b>{t('calc.warn-ratio')}</b></p>}
-                  {advanced && <p className="hero-meta">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
+                  <div className="dosis-info">
+                    <div className="info-item">
+                      <span className="info-label">{t('method.limits')}</span>
+                      <span className="info-value" data-testid="method-limit-hint">{t('method.limitHint').replace('{tazas}', String(cupsMax)).replace('{agua}', String(waterMaxG)).replace('{metodo}', t(cat.methods.find(m => m.id === methodId)?.nameKey ?? methodId))}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">{t('calc.coffee')}</span>
+                      <span className="info-value" data-testid="coffee-from-water">{t('calc.coffeeFromWater').replace('{g}', String(coffeeEff))}</span>
+                    </div>
+                  </div>
+                  {isRatioWarn(ratioN) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
+                  {advanced && <p className="next">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
                   <button type="button" className="cta" onClick={() => setStep('preview')}>{t('app.start')}</button>
                 </div>
               </div>
@@ -411,7 +467,7 @@ export default function App() {
                   saveCustomRecipes(next);
                   setRecipeId(created.id);
                   setMethodId(created.methodId);
-                  setWaterG(Math.min(created.coffeeDefaultG * created.ratio, wmax));
+                  setCups(1);
                   setRatio(created.ratio);
                   setOriginTab('recipes');
                   setStep('summary');
