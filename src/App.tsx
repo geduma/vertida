@@ -69,7 +69,7 @@ export default function App() {
   const allClassics = useMemo(() => [...cat.recipes, ...customs], [cat, customs]);
   const [recipeId, setRecipeId] = useState(cat.recipes[0].id);
   const recipe = [...allClassics, ...cat.discovery].find(r => r.id === recipeId) ?? cat.recipes[0];
-  const [waterG, setWaterG] = useState<number | ''>(recipe.cafeDefaultG * recipe.ratio);
+  const [waterG, setWaterG] = useState<number | ''>(recipe.coffeeDefaultG * recipe.ratio);
   const [ratio, setRatio] = useState<number | ''>(recipe.ratio);
   const [advanced, setAdvanced] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -80,31 +80,31 @@ export default function App() {
   const [favIds, setFavIds] = useState<string[]>(() => loadFavorites());
   const [favOnly, setFavOnly] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
-  const timer = useTimer(recipe.fases, muted, recipeId);
+  const timer = useTimer(recipe.phases, muted, recipeId);
   const lastIdxRef = useRef(timer.idx);
 
   const clampN = (v: number | '', min: number, max: number, fb: number) =>
     v === '' || !Number.isFinite(v) ? fb : Math.min(max, Math.max(min, v));
-  const limitsFor = (id: string) => cat.methods.find(m => m.id === id)?.limites;
+  const limitsFor = (id: string) => cat.methods.find(m => m.id === id)?.limits;
   const methodLimits = limitsFor(methodId);
-  const cupsMax = methodLimits?.tazasMax ?? CONFIG.cupsMax;
-  const waterMaxG = methodLimits?.aguaMaxG ?? CONFIG.waterMaxG;
+  const cupsMax = methodLimits?.cupsMax ?? CONFIG.cupsMax;
+  const waterMaxG = methodLimits?.waterMaxG ?? CONFIG.waterMaxG;
   const ratioMin = methodLimits?.ratioMin ?? 1;
   const ratioMax = methodLimits?.ratioMax ?? 50;
   const waterGN = clampN(waterG, 1, waterMaxG, Math.min(240, waterMaxG));
   const ratioN = clampN(ratio, ratioMin, ratioMax, 16);
   const water = waterGN;
   const coffeeEff = calcCoffee(water, ratioN);
-  const totalTime = recipe.fases.reduce((a, f) => a + f.duracionS, 0);
+  const totalTime = recipe.phases.reduce((a, f) => a + f.durationS, 0);
   const visible = [...allClassics, ...cat.discovery].filter(r => equipmentIds.includes(r.methodId));
   const visibleClassics = allClassics.filter(r => equipmentIds.includes(r.methodId));
   const toggleEquipment = (id: string) =>
     setEquipmentIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   const toggleFav = (id: string) =>
     setFavIds(prev => { const next = toggleFavorite(prev, id); saveFavorites(next); return next; });
-  const brewRecipe = (r: { id: string; methodId: string; ratio: number; cafeDefaultG: number }, origin: OriginTab) => {
+  const brewRecipe = (r: { id: string; methodId: string; ratio: number; coffeeDefaultG: number }, origin: OriginTab) => {
     const lim = limitsFor(r.methodId);
-    const wmax = lim?.aguaMaxG ?? CONFIG.waterMaxG;
+    const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
     setRecipeId(r.id); setMethodId(r.methodId);
     setWaterG(Math.min(CONFIG.gramsPerCup, wmax));
     setRatio(r.ratio); setOriginTab(origin); setStep('summary'); setTab('brew');
@@ -146,7 +146,7 @@ export default function App() {
           ))}
         </nav>
         {tab === 'home' && (() => {
-          const maxCups = Math.max(1, ...cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => m.limites?.tazasMax ?? CONFIG.cupsMax));
+          const maxCups = Math.max(1, ...cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => m.limits?.cupsMax ?? CONFIG.cupsMax));
           return (
             <section aria-label={t('nav.home')} className="home">
               <div className="hero hero-home">
@@ -154,9 +154,9 @@ export default function App() {
                 <h2>{t('home.greeting')}</h2>
                 {suggested ? (() => {
                   const sName = recipeDisplayName(suggested, t);
-                  const sSecs = suggested.fases.reduce((a, f) => a + f.duracionS, 0);
+                  const sSecs = suggested.phases.reduce((a, f) => a + f.durationS, 0);
                   return (<>
-                    <p className="hero-meta">{sName} · 1:{suggested.ratio} · {suggested.cafeDefaultG}g · ~{Math.max(1, Math.round(sSecs / 60))} min</p>
+                    <p className="hero-meta">{sName} · 1:{suggested.ratio} · {suggested.coffeeDefaultG}g · ~{Math.max(1, Math.round(sSecs / 60))} min</p>
                     <div className="form-actions">
                       <button type="button" className="cta" onClick={() => brewRecipe(suggested, 'home')}>{t('home.prepare')}: {sName}</button>
                     </div>
@@ -173,10 +173,10 @@ export default function App() {
                   <div><h2>{t('home.methods')}</h2></div>
                 </div>
                 <div className="method-row">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
-                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nombreKey)}>
-                    <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icono} size={30} /></span>
-                    <span className="method-name">{t(m.nombreKey)}</span>
-                    <span className="hero-meta">{m.limites ? `${m.limites.tazasMax} · ${m.limites.aguaMaxG}g` : ''}</span>
+                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
+                    <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
+                    <span className="method-name">{t(m.nameKey)}</span>
+                    <span className="hero-meta">{m.limits ? `${m.limits.cupsMax} · ${m.limits.waterMaxG}g` : ''}</span>
                     <span className="equip-check" aria-hidden="true">●</span>
                   </button>
                 ))}</div>
@@ -204,18 +204,18 @@ export default function App() {
                 <div className="hero">
                   <button type="button" className="back-link" onClick={() => { timer.reset(); setTab(originTab); setStep('summary'); }}>‹ {t(originTab === 'home' ? 'nav.home' : originTab === 'recipes' ? 'nav.recipes' : 'nav.settings')}</button>
                   <h2>{recipeDisplayName(recipe, t)}</h2>
-                  <p className="hero-meta">{coffeeEff} g · {water} g · 1:{ratioN} · {recipe.fases.length} phases · ~{Math.round(totalTime / 60)} min</p>
+                  <p className="hero-meta">{coffeeEff} g · {water} g · 1:{ratioN} · {recipe.phases.length} phases · ~{Math.round(totalTime / 60)} min</p>
                 </div>
                 <div className="surface">
                   <div className="grid-2">
-                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.aguaMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setWaterG(Math.min(r.cafeDefaultG * r.ratio, wmax)); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nombreKey)}</option>)}</select></label>
+                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setWaterG(Math.min(r.coffeeDefaultG * r.ratio, wmax)); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
                     <label>{t('brew.recipe')} <select value={recipeId} onChange={e => setRecipeId(e.target.value)}>{visible.filter(r => r.methodId === methodId).map(r => <option key={r.id} value={r.id}>{recipeDisplayName(r, t)}</option>)}</select></label>
                   </div>
                   <div className="dosis-grid">
                     <label>{t('calc.water')}<input type="number" value={waterG} min={1} max={waterMaxG} step={1} disabled={waterMaxG === 1} onChange={e => setWaterG(e.target.value === '' ? '' : +e.target.value)} onBlur={() => setWaterG(c => clampN(c, 1, waterMaxG, Math.min(240, waterMaxG)))} /><span className="next">{t('calc.cupEq')}</span></label>
                     <label>{t('calc.ratio')}<input type="number" value={ratio} min={ratioMin} max={ratioMax} step={0.5} disabled={ratioMin === ratioMax} onChange={e => setRatio(e.target.value === '' ? '' : +e.target.value)} onBlur={() => setRatio(r => clampN(r, ratioMin, ratioMax, 16))} /></label>
                   </div>
-                  <p className="next" data-testid="method-limit-hint">{t('method.limitHint').replace('{tazas}', String(cupsMax)).replace('{agua}', String(waterMaxG)).replace('{metodo}', t(cat.methods.find(m => m.id === methodId)?.nombreKey ?? methodId))}</p>
+                  <p className="next" data-testid="method-limit-hint">{t('method.limitHint').replace('{tazas}', String(cupsMax)).replace('{agua}', String(waterMaxG)).replace('{metodo}', t(cat.methods.find(m => m.id === methodId)?.nameKey ?? methodId))}</p>
                   <p className="next" data-testid="coffee-from-water">{t('calc.coffeeFromWater').replace('{g}', String(coffeeEff))}</p>
                   {isRatioWarn(ratioN) && <p><b>{t('calc.warn-ratio')}</b></p>}
                   {advanced && <p className="hero-meta">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
@@ -227,23 +227,23 @@ export default function App() {
               <div className="surface screen-enter">
                 <button type="button" className="back-link" onClick={() => setStep('summary')}>‹ {t('app.back')}</button>
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
-                <ol>{recipe.fases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instruccionKey)} — {f.aguaAcumuladaG} g · {f.duracionS}s {f.tipo === 'manual' ? '· manual' : ''}</li>)}</ol>
+                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {f.waterAccumulatedG} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
                 <div className="form-actions">
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
                 </div>
               </div>
             )}
             {step === 'running' && (() => {
-              const fase = recipe.fases[timer.idx] ?? recipe.fases[0];
-              const faseNext = recipe.fases[timer.idx + 1];
+              const fase = recipe.phases[timer.idx] ?? recipe.phases[0];
+              const faseNext = recipe.phases[timer.idx + 1];
               return (
               <div className="surface timer-col screen-enter" aria-live="polite">
                 <button type="button" className="back-link" onClick={() => { timer.reset(); setStep('summary'); }}>‹ {t('brew.recipe')}</button>
-                <div className="phase-dots" aria-hidden="true">{recipe.fases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
+                <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
                 <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b>{Math.ceil(timer.leftMs / 1000)}s</b></div></div>
-                <h2 className="mega">{fase.aguaAcumuladaG} g</h2>
-                <p><b>{t(fase.instruccionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.fases.length)}/{recipe.fases.length}</p>
-                {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instruccionKey)}</p>}
+                <h2 className="mega">{fase.waterAccumulatedG} g</h2>
+                <p><b>{t(fase.instructionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.phases.length)}/{recipe.phases.length}</p>
+                {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 <div className="timer-actions">
                   <button type="button" className="cta" onClick={() => timer.state === 'running' ? timer.pause() : timer.resume()}>{timer.state === 'running' ? t('timer.pause') : t('timer.resume')}</button>
                   <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
@@ -274,7 +274,7 @@ export default function App() {
                 <h2>{t('recipes.title')}</h2>
                 <p className="hero-meta">{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</p>
                 {filterMethodId && (
-                  <p className="hero-meta">{t('recipes.filterBy').replace('{metodo}', t(cat.methods.find(m => m.id === filterMethodId)?.nombreKey ?? filterMethodId))}</p>
+                  <p className="hero-meta">{t('recipes.filterBy').replace('{metodo}', t(cat.methods.find(m => m.id === filterMethodId)?.nameKey ?? filterMethodId))}</p>
                 )}
               </div>
               <button ref={createBtnRef} type="button" className="cta cta-compact" onClick={() => setCreateOpen(true)}>{t('recipes.new')}</button>
@@ -290,12 +290,12 @@ export default function App() {
                   ? <p className="next">{t('recipes.emptyFav')}</p>
                   : <><p>{t('recipes.empty')}</p><button type="button" className="btn-secondary" onClick={() => setTab('settings')}>{t('settings.equipmentChoose')}</button></>;
               const groups = [...cat.methods]
-                .sort((a, b) => a.orden - b.orden)
+                .sort((a, b) => a.order - b.order)
                 .map(m => ({ m, items: base.filter(r => r.methodId === m.id).sort((a, b) => recipeDisplayName(a, t).localeCompare(recipeDisplayName(b, t), lang)) }))
                 .filter(g => g.items.length > 0);
               const renderCard = (r: (typeof base)[number]) => {
                 const m = cat.methods.find(x => x.id === r.methodId);
-                const secs = r.fases.reduce((a, f) => a + f.duracionS, 0);
+                const secs = r.phases.reduce((a, f) => a + f.durationS, 0);
                 const isCustom = (r as CustomRecipe).custom === true;
                 const name = recipeDisplayName(r, t);
                 const goBrew = () => brewRecipe(r, 'recipes');
@@ -310,7 +310,7 @@ export default function App() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBrew(); } }}
                   >
                     <h3>{name}</h3>
-                    <p className="hero-meta">1:{r.ratio} · {r.cafeDefaultG}g · {r.fases.length} fases · ~{Math.max(1, Math.round(secs / 60))} min{(r.dificultad ? ` · ${r.dificultad}` : '')}</p>
+                    <p className="hero-meta">1:{r.ratio} · {r.coffeeDefaultG}g · {r.phases.length} phases · ~{Math.max(1, Math.round(secs / 60))} min{(r.difficulty ? ` · ${r.difficulty}` : '')}</p>
                     {isCustom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
                     {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
                     {isCustom && (
@@ -340,8 +340,8 @@ export default function App() {
                   {groups.map(g => (
                     <div key={g.m.id} className="method-group">
                       <div className="method-group-head">
-                        <span className="equip-icon equip-icon-sm" aria-hidden="true"><EquipmentIcon id={g.m.icono} size={28} /></span>
-                        <h3>{t(g.m.nombreKey)}</h3>
+                        <span className="equip-icon equip-icon-sm" aria-hidden="true"><EquipmentIcon id={g.m.icon} size={28} /></span>
+                        <h3>{t(g.m.nameKey)}</h3>
                         <p className="hero-meta">{g.items.length}</p>
                       </div>
                       <div className="recipes-list">
@@ -357,9 +357,9 @@ export default function App() {
                               onClick={() => brewRecipe(r, 'recipes')}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
                             >
-                              {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nombreKey)}</p>}
+                              {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nameKey)}</p>}
                               <h3>{recipeDisplayName(r, t)}</h3>
-                              <p className="hero-meta">1:{r.ratio} · {r.cafeDefaultG}g · {r.fases.length} fases · ~{Math.max(1, Math.round(r.fases.reduce((a, f) => a + f.duracionS, 0) / 60))} min{(r.dificultad ? ` · ${r.dificultad}` : '')}</p>
+                              <p className="hero-meta">1:{r.ratio} · {r.coffeeDefaultG}g · {r.phases.length} phases · ~{Math.max(1, Math.round(r.phases.reduce((a, f) => a + f.durationS, 0) / 60))} min{(r.difficulty ? ` · ${r.difficulty}` : '')}</p>
                               {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
                               {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
                               {(r as CustomRecipe).custom && (
@@ -398,11 +398,11 @@ export default function App() {
               onSave={(input) => {
                 try {
                   const lim = limitsFor(input.methodId);
-                  const wmax = lim?.aguaMaxG ?? CONFIG.waterMaxG;
-                  const cmax = lim?.tazasMax ?? CONFIG.cupsMax;
+                  const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
+                  const cmax = lim?.cupsMax ?? CONFIG.cupsMax;
                   const waterNeed = input.coffeeDefaultG * input.ratio;
-                  if ((lim?.cafeMaxG && input.coffeeDefaultG > lim.cafeMaxG) || waterNeed > wmax || waterNeed / CONFIG.gramsPerCup > cmax + 1e-9) {
-                    const mName = t(cat.methods.find(m => m.id === input.methodId)?.nombreKey ?? input.methodId);
+                  if ((lim?.coffeeMaxG && input.coffeeDefaultG > lim.coffeeMaxG) || waterNeed > wmax || waterNeed / CONFIG.gramsPerCup > cmax + 1e-9) {
+                    const mName = t(cat.methods.find(m => m.id === input.methodId)?.nameKey ?? input.methodId);
                     return t('method.limitHint').replace('{tazas}', String(cmax)).replace('{agua}', String(wmax)).replace('{metodo}', mName);
                   }
                   const created = createCustomRecipe(input);
@@ -411,7 +411,7 @@ export default function App() {
                   saveCustomRecipes(next);
                   setRecipeId(created.id);
                   setMethodId(created.methodId);
-                  setWaterG(Math.min(created.cafeDefaultG * created.ratio, wmax));
+                  setWaterG(Math.min(created.coffeeDefaultG * created.ratio, wmax));
                   setRatio(created.ratio);
                   setOriginTab('recipes');
                   setStep('summary');
@@ -453,8 +453,8 @@ export default function App() {
         )}
         <DiscoveryModal
           recipe={discoveryOpen ? surprise : null}
-          methodName={surprise ? t(cat.methods.find(m => m.id === surprise.methodId)?.nombreKey ?? surprise.methodId) : ''}
-          methodIcon={cat.methods.find(m => m.id === surprise?.methodId)?.icono ?? 'v60'}
+          methodName={surprise ? t(cat.methods.find(m => m.id === surprise.methodId)?.nameKey ?? surprise.methodId) : ''}
+          methodIcon={cat.methods.find(m => m.id === surprise?.methodId)?.icon ?? 'v60'}
           onClose={() => setDiscoveryOpen(false)}
           onBrew={() => { if (surprise) { setDiscoveryOpen(false); brewRecipe(surprise, 'home'); } }}
           onReroll={() => setSurpriseId(id => pickSurprise(id))}

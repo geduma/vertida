@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "id": "v60-clasica",
+      "methodId": "v60",
+      "category": "classic",
+      "nameKey": "recipe.v60-clasica.name",
+      "ratio": 16,
+      "coffeeDefaultG": 15,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["lavado", "dulce"],
+      "phases": [
+        {"waterAccumulatedG": 30, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 150, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 240, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 240, "durationS": 30, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 240, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "chemex-clasica",
+      "methodId": "chemex",
+      "category": "classic",
+      "nameKey": "recipe.chemex-clasica.name",
+      "ratio": 16,
+      "coffeeDefaultG": 30,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["limpio", "florales"],
+      "phases": [
+        {"waterAccumulatedG": 60, "durationS": 45, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 300, "durationS": 90, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 480, "durationS": 90, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 480, "durationS": 60, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 480, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "aeropress-clasica",
+      "methodId": "aeropress",
+      "category": "classic",
+      "nameKey": "recipe.aeropress-clasica.name",
+      "ratio": 13,
+      "coffeeDefaultG": 17,
+      "origin": "vertida",
+      "difficulty": "fácil",
+      "tags": ["intenso", "rápido"],
+      "phases": [
+        {"waterAccumulatedG": 50, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 220, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 220, "durationS": 30, "instructionKey": "phase.stir", "type": "stir"},
+        {"waterAccumulatedG": 220, "durationS": 30, "instructionKey": "phase.press", "type": "wait"},
+        {"waterAccumulatedG": 220, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "prensa-clasica",
+      "methodId": "prensa-francesa",
+      "category": "classic",
+      "nameKey": "recipe.prensa-clasica.name",
+      "ratio": 16,
+      "coffeeDefaultG": 30,
+      "origin": "vertida",
+      "difficulty": "fácil",
+      "tags": ["cuerpo", "fácil"],
+      "phases": [
+        {"waterAccumulatedG": 480, "durationS": 30, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 480, "durationS": 240, "instructionKey": "phase.steep", "type": "wait"},
+        {"waterAccumulatedG": 480, "durationS": 30, "instructionKey": "phase.press", "type": "manual"},
+        {"waterAccumulatedG": 480, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    }
+  ]
+}

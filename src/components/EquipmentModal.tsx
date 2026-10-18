@@ -3,10 +3,10 @@ import EquipmentIcon from './EquipmentIcon';
 
 export type EquipMethod = {
   id: string;
-  nombreKey: string;
-  descripcionKey?: string;
+  nameKey: string;
+  descriptionKey?: string;
   descripcion?: string;
-  icono: string;
+  icon: string;
 };
 
 type Props = {
@@ -67,14 +67,14 @@ export default function EquipmentModal({ open, methods, selected, onToggle, onCl
                   className="sr-only"
                   checked={active}
                   onChange={() => onToggle(m.id)}
-                  aria-label={t(m.nombreKey)}
+                  aria-label={t(m.nameKey)}
                 />
                 <span className="equip-icon" aria-hidden="true">
-                  <EquipmentIcon id={m.icono} />
+                  <EquipmentIcon id={m.icon} />
                 </span>
-                <span className="equip-name">{t(m.nombreKey)}</span>
-                {(m.descripcionKey || m.descripcion) && (
-                  <span className="hero-meta">{m.descripcionKey ? t(m.descripcionKey) : m.descripcion}</span>
+                <span className="equip-name">{t(m.nameKey)}</span>
+                {(m.descriptionKey || m.descripcion) && (
+                  <span className="hero-meta">{m.descriptionKey ? t(m.descriptionKey) : m.descripcion}</span>
                 )}
                 <span className="equip-check" aria-hidden="true">
                   {active ? '●' : '○'}

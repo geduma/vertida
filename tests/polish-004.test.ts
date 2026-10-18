@@ -46,9 +46,9 @@ describe('004 settings + recipes polish', () => {
   it('buildDefaultPhases generates 5 valid scaled phases', () => {
     const fases = buildDefaultPhases(15, 16);
     expect(fases).toHaveLength(5);
-    expect(fases[fases.length - 1]).toMatchObject({ tipo: 'fin', duracionS: 0 });
-    expect(fases[0].aguaAcumuladaG).toBe(30); // 15*2 bloom
-    expect(fases[2].aguaAcumuladaG).toBe(240); // 15*16 total
+    expect(fases[fases.length - 1]).toMatchObject({ type: 'done', durationS: 0 });
+    expect(fases[0].waterAccumulatedG).toBe(30); // 15*2 bloom
+    expect(fases[2].waterAccumulatedG).toBe(240); // 15*16 total
     // validate against schema via full recipe
     const r = createCustomRecipe({ name: 'My V60', methodId: 'v60', ratio: 16, coffeeDefaultG: 15 });
     expect(() => RecipeSchema.parse({ ...r, custom: undefined, name: undefined, notes: undefined })).not.toThrow();
@@ -79,7 +79,7 @@ describe('004 settings + recipes polish', () => {
     const c = createCustomRecipe({ name: 'My invention ñ', methodId: 'chemex', ratio: 16, coffeeDefaultG: 15 });
     const t = (k: string) => k;
     expect(recipeDisplayName(c, t)).toBe('My invention ñ');
-    expect(recipeDisplayName({ id: 'v60-clasica', nombreKey: 'recipe.v60-clasica.name' } as never, (k: string) => `T:${k}`)).toBe('T:recipe.v60-clasica.name');
+    expect(recipeDisplayName({ id: 'v60-clasica', nameKey: 'recipe.v60-clasica.name' } as never, (k: string) => `T:${k}`)).toBe('T:recipe.v60-clasica.name');
   });
 
   it('RecipeCreateModal exposes dialog contract', async () => {
