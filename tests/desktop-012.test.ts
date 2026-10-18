@@ -10,7 +10,7 @@ describe('012 desktop + island + home + cups default', () => {
     const navOpen = src.indexOf('<nav key={lang}');
     expect(navOpen).toBeGreaterThan(appOpen);
     expect(navOpen).toBeLessThan(src.indexOf("{tab === 'home'"));
-    expect(css).toContain('grid-row:2');
+    expect(css).toContain('grid-column:1');
   });
 
   it('surprise CTA is blind (no recipe name)', () => {
@@ -34,7 +34,7 @@ describe('012 desktop + island + home + cups default', () => {
     expect(src).not.toContain('waterMode');
     expect(src).not.toContain('calc.byCups');
     expect(src).toContain('data-testid="coffee-from-water"');
-    expect(src).toContain('calc.cupEq');
+    expect(src).toContain('calc.waterTotal');
   });
 
   it('tighter spacing (less empty scroll)', () => {

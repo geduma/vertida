@@ -11,7 +11,6 @@ export function db() {
         d.createObjectStore('recipes', { keyPath: 'id' });
         d.createObjectStore('equipment', { keyPath: 'id' });
         d.createObjectStore('settings', { keyPath: 'key' });
-        d.createObjectStore('session', { keyPath: 'key' });
       },
     });
   }

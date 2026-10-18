@@ -19,11 +19,11 @@ export function buildDefaultPhases(coffeeG: number, ratio: number) {
   const bloom = Math.round(coffeeG * 2);
   const pour1 = Math.round(total * 0.6);
   return [
-    { tipo: 'bloom' as const, aguaAcumuladaG: bloom, duracionS: 30, instruccionKey: 'phase.bloom' },
-    { tipo: 'vertido' as const, aguaAcumuladaG: pour1, duracionS: 60, instruccionKey: 'phase.pour' },
-    { tipo: 'vertido' as const, aguaAcumuladaG: total, duracionS: 60, instruccionKey: 'phase.pour' },
-    { tipo: 'espera' as const, aguaAcumuladaG: total, duracionS: 30, instruccionKey: 'phase.drain' },
-    { tipo: 'fin' as const, aguaAcumuladaG: total, duracionS: 0, instruccionKey: 'phase.done' },
+    { type: 'bloom' as const, waterAccumulatedG: bloom, durationS: 30, instructionKey: 'phase.bloom' },
+    { type: 'pour' as const, waterAccumulatedG: pour1, durationS: 60, instructionKey: 'phase.pour' },
+    { type: 'pour' as const, waterAccumulatedG: total, durationS: 60, instructionKey: 'phase.pour' },
+    { type: 'wait' as const, waterAccumulatedG: total, durationS: 30, instructionKey: 'phase.drain' },
+    { type: 'done' as const, waterAccumulatedG: total, durationS: 0, instructionKey: 'phase.done' },
   ];
 }
 
@@ -38,14 +38,14 @@ export function createCustomRecipe(input: {
   const raw = {
     id,
     methodId: input.methodId,
-    categoria: 'clasica' as const,
-    nombreKey: `custom.${id}.name`,
+    category: 'classic' as const,
+    nameKey: `custom.${id}.name`,
     ratio: input.ratio,
-    cafeDefaultG: input.coffeeDefaultG,
-    origen: 'custom',
-    dificultad: 'homemade',
+    coffeeDefaultG: input.coffeeDefaultG,
+    origin: 'custom',
+    difficulty: 'homemade',
     tags: ['homemade'],
-    fases: buildDefaultPhases(input.coffeeDefaultG, input.ratio),
+    phases: buildDefaultPhases(input.coffeeDefaultG, input.ratio),
     version: 1,
   };
   const parsed = RecipeSchema.parse(raw);
@@ -63,10 +63,10 @@ export function loadCustomRecipes(): CustomRecipe[] {
       const r = item as Record<string, unknown>;
       // Re-validate base recipe shape; purge corrupt
       const base = RecipeSchema.safeParse({
-        id: r.id, methodId: r.methodId, categoria: r.categoria ?? 'clasica',
-        nombreKey: r.nombreKey, ratio: r.ratio, cafeDefaultG: r.cafeDefaultG,
-        origen: r.origen ?? 'custom', dificultad: r.dificultad, tags: r.tags,
-        historiaKey: r.historiaKey, fases: r.fases, version: r.version ?? 1,
+        id: r.id, methodId: r.methodId, category: r.category ?? 'classic',
+        nameKey: r.nameKey, ratio: r.ratio, coffeeDefaultG: r.coffeeDefaultG,
+        origin: r.origin ?? 'custom', difficulty: r.difficulty, tags: r.tags,
+        storyKey: r.storyKey, phases: r.phases, version: r.version ?? 1,
       });
       if (!base.success) continue;
       if (typeof r.name !== 'string' || !r.name.trim()) continue;
@@ -89,5 +89,5 @@ export function saveCustomRecipes(list: CustomRecipe[]): void {
 export function recipeDisplayName(r: Recipe & { custom?: boolean; name?: string }, t: (k: string) => string): string {
   const c = r as CustomRecipe;
   if (c.custom && c.name) return c.name;
-  return t(r.nombreKey);
+  return t(r.nameKey);
 }

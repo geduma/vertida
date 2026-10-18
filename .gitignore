@@ -55,3 +55,6 @@ Thumbs.db
 *.pem
 *.tmp
 *.temp
+
+# Features docs
+/docs/features/*

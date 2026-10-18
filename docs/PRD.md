@@ -19,9 +19,9 @@
 5. **Discover (3 atypical):** `v60-tonica, aeropress-invertido-frio, chemex-cascara`. No own tab: random modal from Home (`Cerrar/Otra/Preparar`, re-roll without repeating, ESC/backdrop, stable focus).
 6. **Create homemade recipe:** `+ Nueva receta` button in Recipes → modal (method, name, ratio, base coffee, notes) → validates against method caps → saves to `localStorage` (without touching `data/`), brewable and deletable (v1: simple deletion).
 7. **Methods and equipment (4):** `v60, chemex, aeropress, prensa-francesa` with limits (`v60 4tz/1000g/60g · chemex 6/1500/90 · aeropress 1/250/22 · prensa 4/1000/60`) and suggested grind. Settings chooses equipment (2-col modal with SVG per method); Home and Recipes only show selected; empty state with CTA to Settings.
-8. **Settings:** language `ES/EN`, theme `Light/Dark/Auto` (follows OS live, persists), Advanced (`role=switch`), equipment, session (guest or `name (email)`, `Login <provider>` / `Logout`, visible errors).
+8. **Settings:** language `ES/EN`, theme `Light/Dark/Auto` (follows OS live, persists), Advanced (`role=switch`), equipment, local-only notice (no accounts).
 9. **Timer:** per phase (`duracionS`, `aguaAcumuladaG`, `tipo manual/auto`), pause/resume, skip, mute, restart/cancel, `done` state → `listo` CTA. Background + WakeLock (per platform).
-10. **PWA + offline data:** `VitePWA autoUpdate`, manifest `Vertida / #3b2316 / icon-192.png`, `CacheFirst` only for `/src/data/`. Optional local Google-only session via Geduma Auth (`apiBaseUrl https://api.geduma.com`, `redirect https://vertida.geduma.com/auth/callback`, 30 days, fail-closed).
+10. **PWA + offline data:** `VitePWA autoUpdate`, manifest `Vertida / #3b2316 / icon-192.png`, `CacheFirst` only for `/src/data/`. 100% local-only: no session, no accounts, no cloud sync.
 11. **i18n + accessibility:** `t(k)` with `es → key` fallback; `tablist/radiogroup/switch/button` with `aria-selected/checked/pressed`; keyboard navigation in cards and modals; layout with no scroll-x <360px; desktop `≥1024px` with sidebar.
 
 ## 3. Non-goals
@@ -40,7 +40,7 @@
 | Design | Mobile-first HIG: slate tokens (`src/theme/tokens.ts`), Liquid Glass island (single layer, no scrim), floating sidebar on desktop |
 | A11y | Roles and focus per §2.11; light/dark contrast; persisted `data-theme` |
 | Security | No `innerHTML`, no secrets, https-only, validated inputs (zod); deferred `npm audit fix --force` (breaks with Vite 8) |
-| Privacy | Local-only triple `email/display/provider` 30d; no `rawData/salt`; Colombia Law 1581 notice **pending** |
+| Privacy | 100% local-only; no accounts, no session, no cloud sync; no `rawData/salt`; Colombia Law 1581 notice **pending** |
 
 ## 5. Data and business rules
 

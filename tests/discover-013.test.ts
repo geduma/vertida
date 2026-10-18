@@ -18,7 +18,7 @@ describe('013 discover modal + grouped recipes + water-only dose + timer', () =>
   it('recipes render complete and grouped by method order', () => {
     expect(src).toContain('method-group');
     expect(src).toContain('method-group-head');
-    expect(src).toContain('a.orden - b.orden');
+    expect(src).toContain('a.order - b.order');
     expect(src).toContain('setFavOnly(false)');
     expect(css).toContain('.method-group{');
   });
@@ -30,7 +30,7 @@ describe('013 discover modal + grouped recipes + water-only dose + timer', () =>
 
   it('dose has no base selector and shows per-cup equivalence', () => {
     expect(src).not.toContain('calc.base');
-    expect(src).toContain('calc.cupEq');
+    expect(src).toContain('calc.waterTotal');
     expect(src).toContain('className="dosis-grid"');
   });
 

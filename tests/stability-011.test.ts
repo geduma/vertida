@@ -11,8 +11,9 @@ describe('011 brew back + limits + island + home + favorites', () => {
   });
 
   it('single-value limits disable the input (013 water-only)', () => {
-    expect(src).toContain('disabled={waterMaxG === 1}');
-    expect(src).toContain('disabled={ratioMin === ratioMax}');
+    expect(src).toContain('disabled={cupsMax === 1}'); // water is now a cups slider (023); aeropress cupsMax===1 -> disabled
+    expect(src).toContain('disabled={ratioMin === ratioMax || ratioN <= ratioMin}');
+    expect(src).toContain('disabled={ratioMin === ratioMax || ratioN >= ratioMax}');
   });
 
   it('dose inputs share one uniform grid', () => {
@@ -29,8 +30,8 @@ describe('011 brew back + limits + island + home + favorites', () => {
   it('timer resets on recipe change and running view is guarded', () => {
     const timer = readFileSync('src/lib/useTimer.ts', 'utf8');
     expect(timer).toContain('resetKey');
-    expect(src).toContain('useTimer(recipe.fases, muted, recipeId)');
-    expect(src).toContain('recipe.fases[timer.idx] ?? recipe.fases[0]');
+    expect(src).toContain('useTimer(recipe.phases, muted, recipeId)');
+    expect(src).toContain('recipe.phases[timer.idx] ?? recipe.phases[0]');
   });
 
   it('modals use stable close callbacks (no focus steal per render)', () => {
@@ -65,8 +66,8 @@ describe('011 brew back + limits + island + home + favorites', () => {
 
   it('aeropress limited to 1 cup in base JSON with schema', () => {
     const methods = JSON.parse(readFileSync('src/data/methods.json', 'utf8'));
-    const aero = methods.find((m: { id: string }) => m.id === 'aeropress');
-    expect(aero.limites.tazasMax).toBe(1);
+    const aero = methods.methods.find((m: { id: string }) => m.id === 'aeropress');
+    expect(aero.limits.cupsMax).toBe(1);
     const schemas = readFileSync('src/lib/schemas.ts', 'utf8');
     expect(schemas).toContain('MethodLimitsSchema');
   });

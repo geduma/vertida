@@ -2,6 +2,7 @@
   --btn-radius:12px;--btn-h-lg:52px;--btn-h-md:48px;--btn-h-sm:40px;
   --input-h:48px;
   --switch-w:52px;--switch-h:32px;
+  --motion-fast:150ms;--motion-normal:300ms;--motion-slow:500ms;--ease:cubic-bezier(0.2,0,0,1);
 }
 :root[data-theme='light']{
   --bg:#ECE7DD;--surface:#FFFEFB;--surface2:#E3DCCF;
@@ -10,9 +11,9 @@
   color-scheme:light;
 }
 :root[data-theme='dark']{
-  --bg:#141110;--surface:#201A15;--surface2:#2A221B;
-  --ink:#F5EDE3;--muted:#B8A794;--accent:#E08A3C;--progress:#63C183;--danger:#FF8A80;
-  --tabbar:#201A15;--border:rgba(245,237,227,.12);
+  --bg:#0F0D0C;--surface:#1C1814;--surface2:#29231C;
+  --ink:#F5EDE3;--muted:#C9B8A6;--accent:#E08A3C;--progress:#63C183;--danger:#FF8A80;
+  --tabbar:#1C1814;--border:rgba(245,237,227,.25);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -21,15 +22,17 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 h1,h2{line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
 p{margin:0 0 12px;max-width:65ch}
 
-.app{max-width:640px;margin:0 auto;min-height:100dvh;padding:20px 20px calc(96px + env(safe-area-inset-bottom));background:var(--bg);display:flex;flex-direction:column;gap:16px}
+.app{max-width:640px;margin:0 auto;min-height:100dvh;padding:20px 20px calc(110px + env(safe-area-inset-bottom));background:var(--bg);display:flex;flex-direction:column;gap:16px}
 .app>section{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media(min-width:1024px){
-  .app{max-width:1200px;padding:32px 32px 48px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start}
-  .app>section{grid-column:2;grid-row:2}
-  .home{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
-  .home .hero-home{grid-column:1/-1}
-  .recipes-list{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .brew-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  .app{max-width:1400px;padding:40px 40px 64px;display:grid;grid-template-columns:minmax(260px, 340px) minmax(0, 1fr);gap:32px;align-items:start}
+  .app>section{grid-column:2;gap:28px}
+  .home{display:flex;flex-direction:column;gap:24px}
+  .home .hero-home{width:100%}
+  .recipes-list{grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))}
+  .screen-enter{gap:28px}
+  .surface{gap:28px}
+  .brew-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
 }
 
 /* Cards: solid surface, single whisper shadow */
@@ -42,6 +45,156 @@ p{margin:0 0 12px;max-width:65ch}
 .row>label{flex:1 1 0;min-width:0}
 .dosis-grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
 label>select,label>input{width:100%;min-height:var(--input-h)}
+
+/* Cups slider — Vertida palette (accent fill, surface2 track) */
+.cups-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  min-height: 6px;
+  border-radius: 999px;
+  border: none;
+  outline: none;
+  padding: 14px 0 10px;
+  margin: 0;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--surface2) var(--fill));
+  cursor: pointer;
+}
+.cups-slider::-webkit-slider-runnable-track {
+  border: none;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+.cups-wrap{ position: relative; display: inline-block; width: 100%; }
+
+.cups-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transform: translateY(-50%);
+}
+.cups-slider::-moz-range-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.cups-slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.cups-slider:disabled::-webkit-slider-thumb {
+  background: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.cups-slider:disabled::-moz-range-thumb {
+  background: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+/* Barra llena cuando cupsMax === 1 (ej. Aeropress 1 taza): sin input nativo, solo barra + círculo al final. */
+.cups-bar-full {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin: 0;
+  padding: 14px 0 10px;
+}
+
+.cups-thumb-end {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  transform: translateY(-50%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+/* Ratio stepper compacto (- valor +) */
+.ratio-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+}
+.ratio-label{ align-items:center; }
+
+/* Info bar debajo del ratio: límites del método + café derivado */
+.dosis-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.info-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: var(--muted);
+}
+.info-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.warn-ratio {
+  margin-top: 12px;
+}
+.ratio-stepper button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  border-radius: var(--btn-radius);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+.ratio-stepper button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ratio-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 /* Subtle Vertida-style back link */
 .back-link{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:15px;font-weight:700;min-height:44px;padding:0 4px;cursor:pointer}
 .back-link:hover{color:var(--ink)}
@@ -76,8 +229,8 @@ label>select,label>input{width:100%;min-height:var(--input-h)}
 .tabbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(min-width:1024px){
   .tabbar{
-    position:sticky;top:24px;left:auto;right:auto;bottom:auto;
-    flex-direction:column;max-width:none;margin:0;border-radius:20px;padding:10px;grid-column:1;grid-row:2;align-self:start;
+    position:sticky;top:32px;left:auto;right:auto;bottom:auto;
+    flex-direction:column;max-width:none;margin:0;border-radius:20px;padding:12px;grid-column:1;grid-row:1 / span 3;align-self:start;
   }
   .tabbar button{min-height:48px;justify-content:flex-start;text-align:left;padding:0 14px;border-radius:12px;font-size:15px}
 }
@@ -97,13 +250,34 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 
 /* Signature: pour-over ring */
 .mega{font-size:clamp(48px,12vw,64px);font-weight:800;line-height:1;margin:4px 0;font-variant-numeric:tabular-nums}
-.ring{width:200px;height:200px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--progress) var(--p,0%),var(--surface2) 0);margin:8px auto}
+.ring{width:200px;height:200px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--progress) var(--p,0%),var(--surface2) 0);margin:8px auto;transition:--p var(--motion-normal) var(--ease)}
 .ring>div{width:152px;height:152px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center}
 .next{color:var(--muted);font-size:14px}
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .phase-flash{animation:flash .5s}
 @keyframes flash{from{background:var(--accent)}to{background:transparent}}
+
+/* Motion utilities — screen enter/exit, staggered reveals, ring sweep, phase flash */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes phasePulse{0%,100%{opacity:1}50%{opacity:0.45}}
+@keyframes btnPress{from{transform:scale(1)}to{transform:scale(0.96)}}
+
+.screen-enter{display:flex;flex-direction:column;gap:16px;animation:fadeIn var(--motion-normal) var(--ease) both}
+.screen-exit{animation:fadeOut var(--motion-fast) var(--ease) both}
+.screen-enter > *{animation:slideUp var(--motion-normal) var(--ease) both}
+.screen-enter > *:nth-child(2){animation-delay:60ms}
+.screen-enter > *:nth-child(3){animation-delay:120ms}
+.screen-enter > *:nth-child(4){animation-delay:180ms}
+.reveal{opacity:0;animation:slideUp var(--motion-normal) var(--ease) both}
+.reveal:nth-child(2){animation-delay:70ms}
+.reveal:nth-child(3){animation-delay:140ms}
+.reveal:nth-child(4){animation-delay:210ms}
+.reveal:nth-child(5){animation-delay:280ms}
+.dot-flash{animation:phasePulse var(--motion-fast) var(--ease) both}
+.btn-pressed{animation:btnPress var(--motion-fast) var(--ease) both}
 @media (forced-colors:active),(prefers-contrast:more){
   .tabbar{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--tabbar);border:1px solid ButtonBorder}
   .surface{box-shadow:none}
@@ -153,12 +327,12 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .equip-name{font-size:15px;font-weight:700;color:var(--ink)}
 .equip-check{position:absolute;top:10px;right:12px;color:var(--accent);font-size:14px}
 /* Recipes — fixed 2-column grid */
-.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:5;background:color-mix(in srgb, var(--surface) 88%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:10px 0 12px;margin:-10px 0 0}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:5;background:color-mix(in srgb, var(--surface) 88%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:10px 0 12px;margin:0}
 .section-head h2{margin:0}
 .cta-compact{width:auto;min-height:48px;padding:0 16px;flex:none;white-space:nowrap}
 .section-head .cta-compact{flex:none}
 .recipes-grid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
-.recipes-list{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.recipes-list{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));grid-auto-flow:dense}
 .recipes-list .recipe-card{width:100%}
 @media(max-width:560px){.recipes-grid{gap:10px}.recipe-card{padding:10px 12px}}
 .recipe-card{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);min-width:0;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
@@ -178,7 +352,7 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .form-grid{display:flex;flex-direction:column;gap:14px}
 /* Recipes grouped by method */
 .method-group{display:flex;flex-direction:column;gap:10px;min-width:0}
-.method-group-head{display:flex;align-items:center;gap:8px;padding:4px 2px 0}
+.method-group-head{display:flex;align-items:center;gap:8px;padding:4px 2px 0;grid-column:1/-1}
 .method-group-head h3{margin:0;font-size:14px}
 .method-group-head .hero-meta{margin:0}
 /* Timer preparation */
@@ -188,6 +362,8 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .timer-actions{display:grid;gap:10px;grid-template-columns:1fr 1fr}
 .timer-actions .cta{grid-column:1/-1;width:100%}
 .timer-actions .btn-secondary{min-width:0;width:100%}
+/* Timer screen: centered on mobile and desktop */
+.timer-col{max-width:560px;margin:0 auto;width:100%}
 @media(min-width:1024px){.timer-col{max-width:560px;margin:0 auto;width:100%}}
 /* ES/EN stability — compact, no forced wide widths */
 .setting-row{content-visibility:auto}
@@ -224,4 +400,70 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
   .toggle[data-on='true']{background:Highlight}
   .toggle .knob{background:ButtonFace;border:1px solid ButtonBorder}
   .equip-card[data-on='true']{border:2px solid Highlight;background:Canvas}
+}
+
+/* ===== Desktop redesign (≥1024px): fluid, friendly, functional ===== */
+/* Reference mobile: same navigation and brew flow, desktop-specific density, spacing, and affordances. Mobile block untouched. */
+@media(min-width:1024px){
+  /* Sidebar tabbar: sticky, full-height, friendly labels (no icon-only collapse, D-1) */
+  .tabbar{
+    top:40px;
+    border-radius:16px;
+    padding:14px;
+    gap:8px;
+  }
+  .tabbar button{
+    min-height:52px;
+    font-size:15px;
+    font-weight:600;
+    padding:0 16px;
+    border-radius:14px;
+    text-align:left;
+    justify-content:flex-start;
+  }
+  .tabbar button:focus-visible{outline-offset:3px}
+
+  /* Recipe cards: comfortable desktop sizing, clear hover affordance */
+  .recipe-card{
+    padding:16px 18px;
+    border-radius:16px;
+    min-height:140px;
+  }
+  .recipe-card:hover{
+    border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .recipe-card h3{font-size:15px}
+  .recipe-card .hero-meta,.recipe-card .next{font-size:12.5px}
+
+  /* Desktop recipes grid: adaptive columns as viewport grows (2-col narrow, more wide) */
+  .recipes-list{grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))}
+
+  /* Method cards: desktop-friendly touch targets */
+  .method-card{
+    padding:12px 14px;
+    min-height:100px;
+    border-radius:16px;
+  }
+  .method-card:hover{
+    border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .method-name{font-size:15px}
+
+  /* Modals: centered, max-width 520px, footer Save/Cancel on one line (no X, D-3) */
+  .modal{max-width:520px}
+  .modal-foot{justify-content:flex-end}
+  .modal-foot .btn-secondary{order:1}
+  .modal-foot .cta{order:2;min-width:0}
+
+  /* Brew timer: breathing room */
+  .mega{font-size:clamp(48px, 8vw, 72px)}
+
+  /* When timer runs, brew section spans both grid columns so timer centers on full screen */
+  .app.brew-running > section{grid-column:1 / -1}
+
+  /* Button hover states on desktop */
+  button:hover:not(:active){opacity:0.92}
+  .cta:hover:not(:active){opacity:0.9;filter:brightness(1.05)}
 }

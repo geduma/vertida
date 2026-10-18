@@ -6,7 +6,7 @@ export type TimerState = 'idle' | 'running' | 'paused' | 'done';
 export function useTimer(phases: Phase[], muted: boolean, resetKey?: string) {
   const [idx, setIdx] = useState(0);
   const [state, setState] = useState<TimerState>('idle');
-  const [leftMs, setLeftMs] = useState((phases[0]?.duracionS ?? 0) * 1000);
+  const [leftMs, setLeftMs] = useState((phases[0]?.durationS ?? 0) * 1000);
   const deadline = useRef(0);
   const raf = useRef(0);
 
@@ -38,15 +38,15 @@ export function useTimer(phases: Phase[], muted: boolean, resetKey?: string) {
       }
       const ni = idx + 1;
       // Manual waits for tap: pause on entry
-      if (phases[ni].tipo === 'manual') {
+      if (phases[ni].type === 'manual') {
         setIdx(ni);
-        setLeftMs(phases[ni].duracionS * 1000);
+        setLeftMs(phases[ni].durationS * 1000);
         setState('paused');
         return;
       }
       setIdx(ni);
-      deadline.current = Date.now() + phases[ni].duracionS * 1000;
-      setLeftMs(phases[ni].duracionS * 1000);
+      deadline.current = Date.now() + phases[ni].durationS * 1000;
+      setLeftMs(phases[ni].durationS * 1000);
     } else {
       setLeftMs(left);
     }
@@ -74,18 +74,18 @@ export function useTimer(phases: Phase[], muted: boolean, resetKey?: string) {
   }, [state, tick]);
 
   const start = () => {
-    deadline.current = Date.now() + phases[0].duracionS * 1000;
+    deadline.current = Date.now() + phases[0].durationS * 1000;
     setIdx(0);
-    setLeftMs(phases[0].duracionS * 1000);
+    setLeftMs(phases[0].durationS * 1000);
     setState('running');
   };
   const pause = () => { setState('paused'); setLeftMs(Math.max(0, deadline.current - Date.now())); };
   const resume = () => {
-    if (phases[idx].tipo === 'manual') { // Confirming a manual step advances
+    if (phases[idx].type === 'manual') { // Confirming a manual step advances
       const ni = idx + 1;
       if (ni >= phases.length) { setState('done'); return; }
       setIdx(ni);
-      deadline.current = Date.now() + phases[ni].duracionS * 1000;
+      deadline.current = Date.now() + phases[ni].durationS * 1000;
     } else {
       deadline.current = Date.now() + leftMs;
     }
@@ -97,10 +97,10 @@ export function useTimer(phases: Phase[], muted: boolean, resetKey?: string) {
     if (idx + 1 >= phases.length) { setState('done'); return; }
     const ni = idx + 1;
     setIdx(ni);
-    deadline.current = Date.now() + phases[ni].duracionS * 1000;
-    setLeftMs(phases[ni].duracionS * 1000);
+    deadline.current = Date.now() + phases[ni].durationS * 1000;
+    setLeftMs(phases[ni].durationS * 1000);
   };
-  const reset = () => { cancelAnimationFrame(raf.current); setIdx(0); setState('idle'); setLeftMs(phases[0].duracionS * 1000); };
+  const reset = () => { cancelAnimationFrame(raf.current); setIdx(0); setState('idle'); setLeftMs(phases[0].durationS * 1000); };
 
   const resetKeyRef = useRef(resetKey);
   useEffect(() => {
@@ -109,7 +109,7 @@ export function useTimer(phases: Phase[], muted: boolean, resetKey?: string) {
       cancelAnimationFrame(raf.current);
       setIdx(0);
       setState('idle');
-      setLeftMs((phases[0]?.duracionS ?? 0) * 1000);
+      setLeftMs((phases[0]?.durationS ?? 0) * 1000);
     }
   }, [resetKey, phases]);
 

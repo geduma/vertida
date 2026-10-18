@@ -33,7 +33,7 @@ export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose
   }, [recipe]);
 
   if (!recipe) return null;
-  const secs = recipe.fases.reduce((a, f) => a + f.duracionS, 0);
+  const secs = recipe.phases.reduce((a, f) => a + f.durationS, 0);
 
   return (
     <div
@@ -53,9 +53,9 @@ export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose
           </span>
         </div>
         <div className="stack">
-          <h3>{t(recipe.nombreKey)}</h3>
-          <p className="hero-meta">1:{recipe.ratio} · {recipe.cafeDefaultG}g · {recipe.fases.length} fases · ~{Math.max(1, Math.round(secs / 60))} min</p>
-          {recipe.historiaKey && <p className="next">{t(recipe.historiaKey)}</p>}
+          <h3>{t(recipe.nameKey)}</h3>
+          <p className="hero-meta">1:{recipe.ratio} · {recipe.coffeeDefaultG}g · {recipe.phases.length} phases · ~{Math.max(1, Math.round(secs / 60))} min</p>
+          {recipe.storyKey && <p className="next">{t(recipe.storyKey)}</p>}
         </div>
         <div className="modal-foot form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>{t('discover.close')}</button>

@@ -1,10 +1,5 @@
 export const CONFIG = {
   appName: 'Vertida',
-  apiBaseUrl: 'https://api.geduma.com',
-  // appId format app_<hex12>. Placeholder until Geduma Auth onboarding
-  appId: 'app_000000000000',
-  redirectUrl: 'https://vertida.geduma.com/auth/callback',
-  sessionMaxDays: 30,
   locales: ['es', 'en'] as const,
   defaultLocale: 'es' as const,
   unit: 'g' as const,

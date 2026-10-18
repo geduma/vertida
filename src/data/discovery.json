@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "id": "v60-tonica",
+      "methodId": "v60",
+      "category": "atypical",
+      "nameKey": "recipe.v60-tonica.name",
+      "ratio": 11,
+      "coffeeDefaultG": 18,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["tónica", "verano", "cítrico"],
+      "storyKey": "recipe.v60-tonica.story",
+      "phases": [
+        {"waterAccumulatedG": 40, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 200, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 200, "durationS": 30, "instructionKey": "phase.tonic", "type": "manual"},
+        {"waterAccumulatedG": 200, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "aeropress-invertido-frio",
+      "methodId": "aeropress",
+      "category": "atypical",
+      "nameKey": "recipe.aeropress-invertido-frio.name",
+      "ratio": 10,
+      "coffeeDefaultG": 20,
+      "origin": "vertida",
+      "difficulty": "avanzada",
+      "tags": ["invertido", "frío", "dulce"],
+      "storyKey": "recipe.aeropress-invertido-frio.story",
+      "phases": [
+        {"waterAccumulatedG": 60, "durationS": 60, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 200, "durationS": 120, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 200, "durationS": 60, "instructionKey": "phase.flip", "type": "manual"},
+        {"waterAccumulatedG": 200, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "chemex-cascara",
+      "methodId": "chemex",
+      "category": "atypical",
+      "nameKey": "recipe.chemex-cascara.name",
+      "ratio": 16,
+      "coffeeDefaultG": 25,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["cáscara", "té", "experimental"],
+      "storyKey": "recipe.chemex-cascara.story",
+      "phases": [
+        {"waterAccumulatedG": 50, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 400, "durationS": 120, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 400, "durationS": 60, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 400, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    }
+  ]
+}

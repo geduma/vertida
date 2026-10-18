@@ -6,8 +6,8 @@
 
 - **Vertida · coffee recipes and timer.** 100% client-side web: Vite + React 18 + TS + IndexedDB + PWA. Bilingual `es/en`, gram unit.
 - Private package `vertida@2.0.0`, `"type": "module"`.
-- Config: `src/config.ts` (`appName Vertida`, `apiBaseUrl https://api.geduma.com`, `appId` placeholder `app_000000000000` format `app_<hex12>`, `redirectUrl https://vertida.geduma.com/auth/callback`, `sessionMaxDays 30`, `locales [es,en]` default `es`, `unit g`, `gramsPerCup 210`, `coffeeDefaultG 15`, `retentionGramsPerGram 2`, `equipment [v60, chemex, aeropress, prensa-francesa]`).
-- Auth: optional Google-only via Geduma Auth, fail-closed. See `docs/features/001-vertida-mvp/spec.md` sec. 8 (historical spec, not currently in tree).
+- Config: `src/config.ts` (`appName Vertida`, `locales [es,en]` default `es`, `unit g`, `gramsPerCup 210`, `coffeeDefaultG 15`, `retentionGramsPerGram 2`, `equipment [v60, chemex, aeropress, prensa-francesa]`). No auth keys (`apiBaseUrl`, `appId`, `redirectUrl`, `sessionMaxDays` removed).
+- Auth: none. MVP is local-only; no login, no providers, no session.
 - Privacy: only local `email/display/provider`, 30d. No `rawData`/`salt`. Colombian Law 1581 notice **pending with lawyer** — do not claim compliance.
 
 ## 2. Quickstart (verified with node 22.23.3)
@@ -15,13 +15,12 @@
 ```bash
 export PATH="$HOME/.nvm/versions/node/v22.23.3/bin:$PATH"
 npm i
-npm run validate:data  # OK 7 recipes (4 classic + 3 discovery, manifest version 1)
 npm test               # see CHANGELOG latest: 47/47 at 013 (README 17/17 is stale)
 npm run dev            # http://localhost:5173
 npm run build          # dist/ ~238KB JS + tsc -b
 ```
 
-Scripts: `dev: vite`, `build: tsc -b && vite build`, `preview: vite preview`, `validate:data: tsx scripts/validate-data.ts`, `test: vitest run`.
+Scripts: `dev: vite`, `build: tsc -b && vite build`, `preview: vite preview`, `test: vitest run`.
 
 ## 3. Repo map
 
@@ -32,11 +31,10 @@ src/
   main.tsx
   components/             # Toggle, EquipmentModal, EquipmentIcon, RecipeCreateModal, DiscoveryModal
   lib/                    # loadData, calc (calcCoffee/cupsToWater/isRatioWarn), useTimer, db (idb),
-                          # auth (startLogin/exchangeSession/getSession/logout), customRecipes, favorites
+                          # customRecipes, favorites. No auth module (removed).
   data/                   # methods.json, recipes/*.json (4), discovery/*.json (3), manifest.json, version.json
   i18n/es.json, en.json   # ALL UI copy lives here, keyed (t(k) falls back es → key)
   theme/tokens.ts, app.css # premium slate tokens, light/dark via [data-theme], Liquid Glass island/sidebar
-scripts/validate-data.ts  # zod validation of data/ contract
 tests/                    # vitest: calc, settings, stable-005, centered-cards-006, stability-011, desktop-012, discover-013…
 vite.config.ts            # VitePWA autoUpdate; manifest Vertida / #3b2316 / icon-192.png;
                           # workbox CacheFirst only for /src/data/
@@ -57,7 +55,7 @@ Data contract (`src/data/`):
 5. **Recipes list:** grouped by method (`orden` + header with count), sorted by display name per `lang`; `Todas|Favoritas` segmented (`role=radiogroup`); card is `role=button` (Enter/Space brews); custom `Delete` uses `stopPropagation`. Favorites in `localStorage` (`lib/favorites.ts`); customs in `localStorage` (`lib/customRecipes.ts`).
 6. **Theme:** `vertida-theme-mode` `light|dark|auto` (+ legacy `vertida-theme`), `document.documentElement.dataset.theme`, follows OS live via `matchMedia`. Mobile: floating Liquid Glass pill (single glass layer, no scrim). Desktop `≥1024px`: floating sidebar (nav inside `.app` grid col 1, content col 2). Compact buttons (`--btn-radius 12px`, heights 52/48/40); modals have footer actions on one line (`.form-actions{nowrap}`); no `modal-close` X — footer `Save/Cancel` only.
 7. **Security:** no `innerHTML`/`dangerouslySetInnerHTML`, no secrets in repo, https-only, validated inputs (zod), React escaping. `npm audit fix --force` is **postponed** (Vite 8 breaking) — do not run unasked.
-8. **Docs live with code.** CHANGELOG entries are human-grouped (`Added/Changed/Fixed/Verified`), latest-first. One fact per bullet with file paths. `Verified:` line must be actually run (`build`, `test`, `validate:data`).
+8. **Docs live with code.** CHANGELOG entries are human-grouped (`Added/Changed/Fixed/Verified`), latest-first. One fact per bullet with file paths. `Verified:` line must be actually run (`build`, `test`).
 
 ## 5. How to do common tasks
 
@@ -66,18 +64,18 @@ Data contract (`src/data/`):
 1. Add `src/data/recipes/<id>.json` (zod-valid phases, `methodId` must exist).
 2. Append id to `manifest.json → recipes`.
 3. Add display/instruction keys to **both** `src/i18n/es.json` and `en.json`.
-4. Run `npm run validate:data` (must say OK 7+n) + `npm test` + `npm run build`.
+4. Run `npm test` + `npm run build`.
 
 **Custom (homemade) recipe:** UI-only via `+ New recipe` button → `RecipeCreateModal` → `createCustomRecipe()` → `localStorage`. Never touch `data/`. Enforce method caps (`cafeMaxG`, `aguaMaxG`, `tazasMax` via `gramsPerCup`) with `method.limitHint`; on zod failure return `error.coffee-range`.
 
 **Calculator/limits:** `waterGN = clamp(waterG, 1, aguaMaxG)`, `ratioN = clamp(ratio, ratioMin, ratioMax)` from `method.limites` (fallback `1–50/16`); `coffeeEff = calcCoffee(water, ratio)`; warn via `isRatioWarn(ratioN)`; hint via `method.limitHint {tazas} {agua} {metodo}`.
 
-**Settings:** language segmented `ES/EN` (`role=radio`, `aria-checked`); theme segmented `Light/Dark/Auto` + `Current: X` sub-label; Advanced `role=switch` Toggle; equipment via modal (footer counter + Save, min 2-col grid, per-method SVG); session row (`guest` or `displayName (email)`, `Login <provider>` / `Logout`, `authError`, `noProviders` when empty).
+**Settings:** language segmented `ES/EN` (`role=radio`, `aria-checked`); theme segmented `Light/Dark/Auto` + `Current: X` sub-label; Advanced `role=switch` Toggle; equipment via modal (footer counter + Save, min 2-col grid, per-method SVG); local-only notice row (no accounts, no session).
 
-## 6. Quality gates (run before claiming done)
+## 8. Quality gates (run before claiming done)
 
 ```bash
-npm run validate:data && npm test && npm run build
+npm test && npm run build
 ```
 
 - New behavior needs a test in `tests/` (follow `discover-013` / `desktop-012` pattern: `data-testid` + stable strings, intentional updates to old tests documented in CHANGELOG).
@@ -86,7 +84,7 @@ npm run validate:data && npm test && npm run build
 
 ## 7. Never do
 
-- Rename data/DB fields; invent copy, methods, recipes, limits, or `appId`; claim Law 1581 compliance; add network calls outside `apiBaseUrl`/auth; store anything beyond local session triple; add `sec-audit` or `commit/push/PR` unasked.
+- Rename data/DB fields; invent copy, methods, recipes, limits, or `appId`; claim Law 1581 compliance; add network calls outside `apiBaseUrl`; store anything beyond local device storage; add `sec-audit` or `commit/push/PR` unasked.
 
 ## References
 
