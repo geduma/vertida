@@ -281,10 +281,10 @@ export default function App() {
             )}
             {step === 'preview' && (
               <div className="surface screen-enter">
-                <button type="button" className="back-link" onClick={() => setStep('summary')}>‹ {t('app.back')}</button>
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
                 <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {f.waterAccumulatedG} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
                 <div className="form-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setStep('summary')}>{t('app.back')}</button>
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
                 </div>
               </div>
@@ -294,14 +294,13 @@ export default function App() {
               const faseNext = recipe.phases[timer.idx + 1];
               return (
               <div className="surface timer-col screen-enter" aria-live="polite">
-                <button type="button" className="back-link" onClick={() => { timer.reset(); setStep('summary'); }}>‹ {t('brew.recipe')}</button>
                 <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
                 <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b>{Math.ceil(timer.leftMs / 1000)}s</b></div></div>
                 <h2 className="mega">{fase.waterAccumulatedG} g</h2>
                 <p><b>{t(fase.instructionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.phases.length)}/{recipe.phases.length}</p>
                 {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 <div className="timer-actions">
-                  <button type="button" className="cta" onClick={() => timer.state === 'running' ? timer.pause() : timer.resume()}>{timer.state === 'running' ? t('timer.pause') : t('timer.resume')}</button>
+                  {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
                   <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
                   <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{t('timer.mute')}: {muted ? 'on' : 'off'}</button>
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>

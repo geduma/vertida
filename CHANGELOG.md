@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased] — 024 brew timer button cleanup
+### Changed
+- `src/App.tsx`: brew `preview` (steps) back button (`{app.back}`, no chevron) moved into `form-actions` inline with start brew (`{app.start}`); back as `btn-secondary` (auto width), start brew as `cta` (prominent, fills width).
+- `src/App.tsx`: brew `running` (timer) `< Recipe` back button (`‹ {brew.recipe}`) removed; `Cancelar` remains in the 2×2 action grid.
+- `src/App.tsx`: brew `running` (timer) Pause/Resume toggle replaced by a Pause-only `cta` rendered only when `timer.state === 'running'`; `timer.resume` no longer rendered.
+### Verified
+- `npm test` 75/75, `tsc -b` clean, `npm run build` clean (~247 KB JS).
+
 ## [Unreleased] — 023 brew water-cups slider + ratio step buttons
 ### Changed
 - `src/App.tsx`: brew `summary` water input replaced by a cups range slider (`min=1`, `max=cupsMax`, `step=1`, default `1`, `disabled` when `cupsMax === 1`); water grams derived as `cups × gramsPerCup` clamped to `aguaMaxG`. Ratio text input replaced by `-` / `+` buttons (0.5 step, clamped to method `ratioMin`/`ratioMax`, default `recipe.ratio`); `brewRecipe` and method/recipe selects reset `cups = 1` and `ratio = recipe.ratio`.
