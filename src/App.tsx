@@ -11,6 +11,7 @@ import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
 import DiscoveryModal from './components/DiscoveryModal';
+import Landing from './components/Landing';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
 
@@ -80,6 +81,7 @@ export default function App() {
   const [favIds, setFavIds] = useState<string[]>(() => loadFavorites());
   const [favOnly, setFavOnly] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
   const timer = useTimer(recipe.phases, muted, recipeId);
   const lastIdxRef = useRef(timer.idx);
 
@@ -141,7 +143,10 @@ export default function App() {
 
   return (
     <div>
-      <div className={`app${tab === 'brew' && step === 'running' ? ' brew-running' : ''}`}>
+      {showLanding ? (
+        <Landing t={t} onEnter={() => setShowLanding(false)} />
+      ) : (
+        <div className={`app${tab === 'brew' && step === 'running' ? ' brew-running' : ''}`}>
         <nav key={lang} className={`tabbar${tab === 'brew' && step === 'running' ? ' is-hidden' : ''}`} role="tablist" aria-label={t('nav.label')}>
           {TABS.map(({ id, labelKey }) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'recipes') setFavOnly(false); setStep('summary'); }}>{t(labelKey)}</button>
@@ -515,7 +520,8 @@ export default function App() {
           onReroll={() => setSurpriseId(id => pickSurprise(id))}
           t={t}
         />
-      </div>
+        </div>
+      )}
     </div>
   );
 }

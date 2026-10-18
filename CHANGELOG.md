@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — 025 landing de bienvenida antes del home
+### Added
+- `src/components/Landing.tsx`: nuevo componente de bienvenida — capa glass translúcida (`.landing-glass`, backdrop-blur + borde), marca, título de bienvenida, subtítulo explicativo y CTA de entrada; render centrado en `100dvh`, sin scroll, mobile + desktop; copy vía i18n; sin `innerHTML` ni llamadas de red.
+- `src/App.tsx`: estado `showLanding` (`useState(true)`); el Landing renderiza antes del home y el CTA lo oculta para revelar el home.
+- `src/theme/app.css`: `.landing` — `min-height:100dvh`, flex centrado, `overflow:hidden`, padding con safe areas; `.landing-glass` capa de vidrio con `border-radius:32px` (40px desktop) y borde translúcido; desktop (`≥1024px`) con mayor padding, marca 64px, título hasta 52px, subtítulo con `max-width:42ch`, CTA ancho automático con sombra sutil.
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `landing.welcome`, `landing.subtitle`, `landing.cta` (copy: "Empezar" / "Get started").
+- `tests/landing-018.test.ts`: nuevo archivo, 4 tests (props del componente y sin `innerHTML`, claves i18n en ambos locales, integración en App, CSS layout sin scroll).
+### Changed
+- `src/App.tsx`: shell del home renderizado condicionalmente (`showLanding ? <Landing /> : <div class="app">…</div>`).
+### Verified
+- `npm test` 79/79, `tsc -b` clean, `npm run build` clean (~248 KB JS).
+
 ## [Unreleased] — 024 brew timer button cleanup
 ### Changed
 - `src/App.tsx`: brew `preview` (steps) back button (`{app.back}`, no chevron) moved into `form-actions` inline with start brew (`{app.start}`); back as `btn-secondary` (auto width), start brew as `cta` (prominent, fills width).
