@@ -24,11 +24,11 @@ describe('003 settings toggles + equipment', () => {
     const mod = await import('../src/components/EquipmentIcon');
     expect(typeof mod.default).toBe('function');
     const supported = new Set(['v60', 'chemex', 'aeropress', 'prensa']);
-    const methods = (methods as { methods: { id: string; icon: string }[] }).methods;
-    for (const m of methods) {
+    const methodsList = (methods as { methods: { id: string; icon: string }[] }).methods;
+    for (const m of methodsList) {
       expect(supported.has(m.icon) || supported.has('prensa'), `${m.id}:${m.icon}`).toBe(true);
     }
-    expect(methods).toHaveLength(4);
+    expect(methodsList).toHaveLength(4);
   });
 
   it('filtering by equipmentIds keeps empty-state (0 equipment -> empty)', () => {
