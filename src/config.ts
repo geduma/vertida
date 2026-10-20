@@ -12,6 +12,17 @@ export const CONFIG = {
   gramsPerCup: 210,
   coffeeDefaultG: 15,
   retentionGramsPerGram: 2,
-  equipment: ['v60', 'chemex', 'aeropress', 'prensa-francesa'],
+  // Default selection — must mirror methods.json ids in `order` (see tests/catalog.test.ts)
+  equipment: [
+    'v60',
+    'chemex',
+    'aeropress',
+    'prensa-francesa',
+    'kalita-wave',
+    'siphon',
+    'clever-dripper',
+    'espresso',
+    'moka',
+  ],
 } as const;
 export type Locale = typeof CONFIG.locales[number];

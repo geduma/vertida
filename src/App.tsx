@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './theme/app.css';
 import { CONFIG } from './config';
 import { loadCatalog } from './lib/loadData';
-import { calcCoffee, isRatioWarn } from './lib/calc';
+import { calcCoffee, cupSizeG, cupsToWater, isRatioWarn, methodCupG } from './lib/calc';
 import { useTimer } from './lib/useTimer';
 import { db } from './lib/db';
 import es from './i18n/es.json';
@@ -95,9 +95,11 @@ export default function App() {
   const waterMaxG = methodLimits?.waterMaxG ?? CONFIG.waterMaxG;
   const ratioMin = methodLimits?.ratioMin ?? 1;
   const ratioMax = methodLimits?.ratioMax ?? 50;
-  // Recipe is the source of truth for water: its final accumulated water = 1 cup of this recipe
+  // 1 cup = the method's own cup (waterMaxG ÷ cupsMax), capped at the recipe's
+  // reference water so single-dose recipes keep their dose. Never clamps: cupsMax × cup ≤ waterMaxG.
   const recipeWaterBaseG = Math.max(1, ...recipe.phases.map(f => f.waterAccumulatedG));
-  const waterGN = clampN(cups * recipeWaterBaseG, 1, waterMaxG, Math.min(recipeWaterBaseG, waterMaxG));
+  const cupG = cupSizeG(recipeWaterBaseG, methodLimits);
+  const waterGN = clampN(cupsToWater(cups, cupG), 1, waterMaxG, Math.min(cupG, waterMaxG));
   const waterScale = waterGN / recipeWaterBaseG; // scales recipe phases to the selected cups
   const scaledG = (g: number) => Math.round(g * waterScale);
   const ratioN = clampN(ratio, ratioMin, ratioMax, 16);
@@ -288,8 +290,12 @@ export default function App() {
                       <span className="info-label">{t('calc.coffee')}</span>
                       <span className="info-value" data-testid="coffee-from-water">{t('calc.coffeeFromWater').replace('{g}', String(coffeeEff))}</span>
                     </div>
+                    <div className="info-item">
+                      <span className="info-label">{t('calc.waterCups')}</span>
+                      <span className="info-value" data-testid="cup-eq">{t('calc.cupEq').replace('{g}', String(Math.round(cupG * 10) / 10))}</span>
+                    </div>
                   </div>
-                  {isRatioWarn(ratioN) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
+                  {isRatioWarn(ratioN, ratioMin, ratioMax) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
                   {advanced && <p className="next">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
                   <button type="button" className="cta" onClick={() => setStep('preview')}>{t('app.start')}</button>
                 </div>
@@ -468,12 +474,12 @@ export default function App() {
               returnFocusRef={createBtnRef}
               onClose={() => setCreateOpen(false)}
               onSave={(input) => {
+                const lim = limitsFor(input.methodId);
                 try {
-                  const lim = limitsFor(input.methodId);
                   const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
                   const cmax = lim?.cupsMax ?? CONFIG.cupsMax;
                   const waterNeed = input.coffeeDefaultG * input.ratio;
-                  if ((lim?.coffeeMaxG && input.coffeeDefaultG > lim.coffeeMaxG) || waterNeed > wmax || waterNeed / CONFIG.gramsPerCup > cmax + 1e-9) {
+                  if ((lim?.coffeeMaxG && input.coffeeDefaultG > lim.coffeeMaxG) || waterNeed > wmax || waterNeed / methodCupG(lim) > cmax + 1e-9) {
                     const mName = t(cat.methods.find(m => m.id === input.methodId)?.nameKey ?? input.methodId);
                     return t('method.limitHint').replace('{tazas}', String(cmax)).replace('{agua}', String(wmax)).replace('{metodo}', mName);
                   }
@@ -490,7 +496,9 @@ export default function App() {
                   setTab('brew');
                   return null;
                 } catch {
-                  return t('error.coffee-range');
+                  return t('error.coffee-range')
+                    .replace('{min}', '1')
+                    .replace('{max}', String(lim?.coffeeMaxG ?? CONFIG.coffeeMaxG));
                 }
               }}
             />
