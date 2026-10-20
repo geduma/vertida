@@ -16,7 +16,7 @@ describe('017 desktop redesign (fluid, friendly, functional)', () => {
   });
 
   it('brew timer centered max-width 560px on desktop', () => {
-    expect(css).toContain('.timer-col{max-width:560px;margin:0 auto;width:100%}');
+    expect(css).toContain('.timer-col{max-width:560px;margin:0 auto;width:100%;text-align:center}');
     expect(css).toContain('.mega{font-size:clamp(48px, 8vw, 72px)}');
   });
 

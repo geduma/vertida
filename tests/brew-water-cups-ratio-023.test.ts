@@ -38,8 +38,9 @@ describe('023 brew water-cups slider + ratio step buttons', () => {
     expect(src).toContain('clampN((c === \'\' ? ratioN : c)');
   });
 
-  it('derived water/coffee preserved (cups * gramsPerCup)', () => {
-    expect(src).toContain('cups * CONFIG.gramsPerCup');
+  it('derived water/coffee preserved (cups * recipeWaterBaseG)', () => {
+    expect(src).toContain('cups * recipeWaterBaseG'); // water per cup comes from the recipe data, not a global constant
     expect(src).toContain('waterGN');
+    expect(src).toContain('scaledG'); // recipe phases scale to the selected cups
   });
 });

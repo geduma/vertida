@@ -95,11 +95,19 @@ export default function App() {
   const waterMaxG = methodLimits?.waterMaxG ?? CONFIG.waterMaxG;
   const ratioMin = methodLimits?.ratioMin ?? 1;
   const ratioMax = methodLimits?.ratioMax ?? 50;
-  const waterGN = clampN(cups * CONFIG.gramsPerCup, 1, waterMaxG, Math.min(240, waterMaxG));
+  // Recipe is the source of truth for water: its final accumulated water = 1 cup of this recipe
+  const recipeWaterBaseG = Math.max(1, ...recipe.phases.map(f => f.waterAccumulatedG));
+  const waterGN = clampN(cups * recipeWaterBaseG, 1, waterMaxG, Math.min(recipeWaterBaseG, waterMaxG));
+  const waterScale = waterGN / recipeWaterBaseG; // scales recipe phases to the selected cups
+  const scaledG = (g: number) => Math.round(g * waterScale);
   const ratioN = clampN(ratio, ratioMin, ratioMax, 16);
   const water = waterGN;
   const coffeeEff = calcCoffee(water, ratioN);
   const totalTime = recipe.phases.reduce((a, f) => a + f.durationS, 0);
+  const fmtMs = (v: number) => {
+    const s = Math.max(0, Math.floor(v / 1000));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  };
   const visible = [...allClassics, ...cat.discovery].filter(r => equipmentIds.includes(r.methodId));
   const visibleClassics = allClassics.filter(r => equipmentIds.includes(r.methodId));
   const toggleEquipment = (id: string) =>
@@ -139,7 +147,10 @@ export default function App() {
     }
   }, [timer.idx]);
 
-  const progress = timer.state === 'done' ? 100 : Math.min(99, Math.round(((totalTime * 1000 - timer.leftMs) / (totalTime * 1000 || 1)) * 100));
+  const progress = timer.state === 'done' ? 100
+    : timer.totalDurationMs > 0
+      ? Math.min(99, Math.round((timer.totalElapsedMs / timer.totalDurationMs) * 100))
+      : 0;
 
   return (
     <div>
@@ -287,7 +298,7 @@ export default function App() {
             {step === 'preview' && (
               <div className="surface screen-enter">
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
-                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {f.waterAccumulatedG} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
+                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep('summary')}>{t('app.back')}</button>
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
@@ -300,12 +311,13 @@ export default function App() {
               return (
               <div className="surface timer-col screen-enter" aria-live="polite">
                 <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
-                <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b>{Math.ceil(timer.leftMs / 1000)}s</b></div></div>
-                <h2 className="mega">{fase.waterAccumulatedG} g</h2>
+                <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b data-testid="timer-elapsed">{fmtMs(timer.totalElapsedMs)}</b></div></div>
+                <h2 className="mega">{scaledG(fase.waterAccumulatedG)} g</h2>
                 <p><b>{t(fase.instructionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.phases.length)}/{recipe.phases.length}</p>
                 {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 <div className="timer-actions">
                   {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
+                  {timer.state === 'paused' && <button type="button" className="cta" data-testid="resume-btn" onClick={timer.resume}>{t('timer.resume')}</button>}
                   <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
                   <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{t('timer.mute')}: {muted ? 'on' : 'off'}</button>
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>

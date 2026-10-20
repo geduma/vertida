@@ -363,7 +363,8 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .timer-actions .cta{grid-column:1/-1;width:100%}
 .timer-actions .btn-secondary{min-width:0;width:100%}
 /* Timer screen: centered on mobile and desktop */
-.timer-col{max-width:560px;margin:0 auto;width:100%}
+.timer-col{max-width:560px;margin:0 auto;width:100%;text-align:center}
+.timer-col h2,.timer-col p{margin-left:auto;margin-right:auto}
 @media(min-width:1024px){.timer-col{max-width:560px;margin:0 auto;width:100%}}
 /* ES/EN stability — compact, no forced wide widths */
 .setting-row{content-visibility:auto}
