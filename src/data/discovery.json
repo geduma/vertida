@@ -6,17 +6,17 @@
       "methodId": "v60",
       "category": "atypical",
       "nameKey": "recipe.v60-tonica.name",
-      "ratio": 11,
+      "ratio": 14,
       "coffeeDefaultG": 18,
       "origin": "vertida",
       "difficulty": "media",
       "tags": ["tónica", "verano", "cítrico"],
       "storyKey": "recipe.v60-tonica.story",
       "phases": [
-        {"waterAccumulatedG": 40, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
-        {"waterAccumulatedG": 200, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
-        {"waterAccumulatedG": 200, "durationS": 30, "instructionKey": "phase.tonic", "type": "manual"},
-        {"waterAccumulatedG": 200, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+        {"waterAccumulatedG": 36, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 252, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 252, "durationS": 30, "instructionKey": "phase.tonic", "type": "manual"},
+        {"waterAccumulatedG": 252, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
       ],
       "version": 1
     },
@@ -25,17 +25,17 @@
       "methodId": "aeropress",
       "category": "atypical",
       "nameKey": "recipe.aeropress-invertido-frio.name",
-      "ratio": 10,
-      "coffeeDefaultG": 20,
+      "ratio": 12,
+      "coffeeDefaultG": 17,
       "origin": "vertida",
       "difficulty": "avanzada",
       "tags": ["invertido", "frío", "dulce"],
       "storyKey": "recipe.aeropress-invertido-frio.story",
       "phases": [
         {"waterAccumulatedG": 60, "durationS": 60, "instructionKey": "phase.bloom", "type": "bloom"},
-        {"waterAccumulatedG": 200, "durationS": 120, "instructionKey": "phase.pour", "type": "pour"},
-        {"waterAccumulatedG": 200, "durationS": 60, "instructionKey": "phase.flip", "type": "manual"},
-        {"waterAccumulatedG": 200, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+        {"waterAccumulatedG": 204, "durationS": 120, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 204, "durationS": 60, "instructionKey": "phase.flip", "type": "manual"},
+        {"waterAccumulatedG": 204, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
       ],
       "version": 1
     },
@@ -55,6 +55,119 @@
         {"waterAccumulatedG": 400, "durationS": 120, "instructionKey": "phase.pour", "type": "pour"},
         {"waterAccumulatedG": 400, "durationS": 60, "instructionKey": "phase.drain", "type": "wait"},
         {"waterAccumulatedG": 400, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "prensa-canela",
+      "methodId": "prensa-francesa",
+      "category": "atypical",
+      "nameKey": "recipe.prensa-canela.name",
+      "ratio": 15,
+      "coffeeDefaultG": 30,
+      "origin": "vertida",
+      "difficulty": "fácil",
+      "tags": ["canela", "tradicional"],
+      "storyKey": "recipe.prensa-canela.story",
+      "phases": [
+        {"waterAccumulatedG": 450, "durationS": 30, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 450, "durationS": 240, "instructionKey": "phase.steep", "type": "wait"},
+        {"waterAccumulatedG": 450, "durationS": 30, "instructionKey": "phase.press", "type": "manual"},
+        {"waterAccumulatedG": 450, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "kalita-floral",
+      "methodId": "kalita-wave",
+      "category": "atypical",
+      "nameKey": "recipe.kalita-floral.name",
+      "ratio": 17,
+      "coffeeDefaultG": 18,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["floral", "limpio"],
+      "storyKey": "recipe.kalita-floral.story",
+      "phases": [
+        {"waterAccumulatedG": 36, "durationS": 30, "instructionKey": "phase.bloom", "type": "bloom"},
+        {"waterAccumulatedG": 200, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 306, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 306, "durationS": 45, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 306, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "siphon-intenso",
+      "methodId": "siphon",
+      "category": "atypical",
+      "nameKey": "recipe.siphon-intenso.name",
+      "ratio": 12,
+      "coffeeDefaultG": 20,
+      "origin": "vertida",
+      "difficulty": "avanzada",
+      "tags": ["intenso", "cuerpo"],
+      "storyKey": "recipe.siphon-intenso.story",
+      "phases": [
+        {"waterAccumulatedG": 240, "durationS": 30, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 240, "durationS": 120, "instructionKey": "phase.steep", "type": "wait"},
+        {"waterAccumulatedG": 240, "durationS": 15, "instructionKey": "phase.stir", "type": "stir"},
+        {"waterAccumulatedG": 240, "durationS": 45, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 240, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "clever-frio-rapido",
+      "methodId": "clever-dripper",
+      "category": "atypical",
+      "nameKey": "recipe.clever-frio-rapido.name",
+      "ratio": 14,
+      "coffeeDefaultG": 25,
+      "origin": "vertida",
+      "difficulty": "media",
+      "tags": ["frío", "dulce"],
+      "storyKey": "recipe.clever-frio-rapido.story",
+      "phases": [
+        {"waterAccumulatedG": 350, "durationS": 30, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 350, "durationS": 600, "instructionKey": "phase.steep", "type": "wait"},
+        {"waterAccumulatedG": 350, "durationS": 60, "instructionKey": "phase.drain", "type": "wait"},
+        {"waterAccumulatedG": 350, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "espresso-largo",
+      "methodId": "espresso",
+      "category": "atypical",
+      "nameKey": "recipe.espresso-largo.name",
+      "ratio": 2.5,
+      "coffeeDefaultG": 18,
+      "origin": "vertida",
+      "difficulty": "avanzada",
+      "tags": ["largo", "dulce"],
+      "storyKey": "recipe.espresso-largo.story",
+      "phases": [
+        {"waterAccumulatedG": 45, "durationS": 35, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 45, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
+      ],
+      "version": 1
+    },
+    {
+      "id": "moka-intensa",
+      "methodId": "moka",
+      "category": "atypical",
+      "nameKey": "recipe.moka-intensa.name",
+      "ratio": 6,
+      "coffeeDefaultG": 28,
+      "origin": "vertida",
+      "difficulty": "fácil",
+      "tags": ["intenso", "rústico"],
+      "storyKey": "recipe.moka-intensa.story",
+      "phases": [
+        {"waterAccumulatedG": 168, "durationS": 60, "instructionKey": "phase.pour", "type": "pour"},
+        {"waterAccumulatedG": 168, "durationS": 240, "instructionKey": "phase.steep", "type": "wait"},
+        {"waterAccumulatedG": 168, "durationS": 0, "instructionKey": "phase.done", "type": "done"}
       ],
       "version": 1
     }

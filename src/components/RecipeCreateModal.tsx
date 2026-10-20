@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CONFIG } from '../config';
 
 type MethodOpt = { id: string; nameKey: string; limits?: { cupsMax: number; waterMaxG: number; coffeeMaxG?: number; ratioMin?: number; ratioMax?: number } };
 
@@ -22,8 +23,8 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const lim = methods.find(m => m.id === methodId)?.limits;
-  const coffeeMax = lim?.coffeeMaxG ?? 500;
-  const ratioMin = lim?.ratioMin ?? 1;
+  const coffeeMax = lim?.coffeeMaxG ?? CONFIG.coffeeMaxG;
+  const ratioMin = lim?.ratioMin ?? 1; // schema bounds when a method carries no limits
   const ratioMax = lim?.ratioMax ?? 50;
   const ratioFixed = ratioMin === ratioMax;
 
@@ -56,11 +57,11 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
       return;
     }
     if (ratio === '' || !(ratio >= ratioMin && ratio <= ratioMax)) {
-      setErr(t('error.ratio-range'));
+      setErr(t('error.ratio-range').replace('{min}', String(ratioMin)).replace('{max}', String(ratioMax)));
       return;
     }
     if (coffee === '' || !(coffee >= 1 && coffee <= coffeeMax)) {
-      setErr(t('error.coffee-range'));
+      setErr(t('error.coffee-range').replace('{min}', '1').replace('{max}', String(coffeeMax)));
       return;
     }
     const res = onSave({ name: name.trim().slice(0, 60), methodId, ratio: Number(ratio), coffeeDefaultG: Number(coffee), notes });
@@ -108,7 +109,7 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
               <input type="number" value={coffee} min={1} max={coffeeMax} step={0.5} onChange={(e) => setCoffee(e.target.value === '' ? '' : +e.target.value)} onBlur={() => setCoffee(c => (c === '' || !Number.isFinite(c) ? 15 : Math.min(coffeeMax, Math.max(1, c))))} />
             </label>
           </div>
-          {lim && <p className="next" data-testid="create-limit-hint">{t('method.limitHint').replace('{cups}', String(lim.cupsMax)).replace('{water}', String(lim.waterMaxG)).replace('{method}', t(methods.find(m => m.id === methodId)?.nameKey ?? methodId))}</p>}
+          {lim && <p className="next" data-testid="create-limit-hint">{t('method.limitHint').replace('{tazas}', String(lim.cupsMax)).replace('{agua}', String(lim.waterMaxG)).replace('{metodo}', t(methods.find(m => m.id === methodId)?.nameKey ?? methodId))}</p>}
           <label>{t('recipes.fieldNotes')}
             <input type="text" value={notes} maxLength={140} onChange={(e) => setNotes(e.target.value)} placeholder={t('recipes.fieldNotesPh')} />
           </label>

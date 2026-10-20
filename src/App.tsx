@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './theme/app.css';
 import { CONFIG } from './config';
 import { loadCatalog } from './lib/loadData';
-import { calcCoffee, isRatioWarn } from './lib/calc';
+import { calcCoffee, cupSizeG, cupsToWater, isRatioWarn, methodCupG } from './lib/calc';
 import { useTimer } from './lib/useTimer';
 import { db } from './lib/db';
 import es from './i18n/es.json';
@@ -95,11 +95,21 @@ export default function App() {
   const waterMaxG = methodLimits?.waterMaxG ?? CONFIG.waterMaxG;
   const ratioMin = methodLimits?.ratioMin ?? 1;
   const ratioMax = methodLimits?.ratioMax ?? 50;
-  const waterGN = clampN(cups * CONFIG.gramsPerCup, 1, waterMaxG, Math.min(240, waterMaxG));
+  // 1 cup = the method's own cup (waterMaxG ÷ cupsMax), capped at the recipe's
+  // reference water so single-dose recipes keep their dose. Never clamps: cupsMax × cup ≤ waterMaxG.
+  const recipeWaterBaseG = Math.max(1, ...recipe.phases.map(f => f.waterAccumulatedG));
+  const cupG = cupSizeG(recipeWaterBaseG, methodLimits);
+  const waterGN = clampN(cupsToWater(cups, cupG), 1, waterMaxG, Math.min(cupG, waterMaxG));
+  const waterScale = waterGN / recipeWaterBaseG; // scales recipe phases to the selected cups
+  const scaledG = (g: number) => Math.round(g * waterScale);
   const ratioN = clampN(ratio, ratioMin, ratioMax, 16);
   const water = waterGN;
   const coffeeEff = calcCoffee(water, ratioN);
   const totalTime = recipe.phases.reduce((a, f) => a + f.durationS, 0);
+  const fmtMs = (v: number) => {
+    const s = Math.max(0, Math.floor(v / 1000));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  };
   const visible = [...allClassics, ...cat.discovery].filter(r => equipmentIds.includes(r.methodId));
   const visibleClassics = allClassics.filter(r => equipmentIds.includes(r.methodId));
   const toggleEquipment = (id: string) =>
@@ -139,7 +149,10 @@ export default function App() {
     }
   }, [timer.idx]);
 
-  const progress = timer.state === 'done' ? 100 : Math.min(99, Math.round(((totalTime * 1000 - timer.leftMs) / (totalTime * 1000 || 1)) * 100));
+  const progress = timer.state === 'done' ? 100
+    : timer.totalDurationMs > 0
+      ? Math.min(99, Math.round((timer.totalElapsedMs / timer.totalDurationMs) * 100))
+      : 0;
 
   return (
     <div>
@@ -277,8 +290,12 @@ export default function App() {
                       <span className="info-label">{t('calc.coffee')}</span>
                       <span className="info-value" data-testid="coffee-from-water">{t('calc.coffeeFromWater').replace('{g}', String(coffeeEff))}</span>
                     </div>
+                    <div className="info-item">
+                      <span className="info-label">{t('calc.waterCups')}</span>
+                      <span className="info-value" data-testid="cup-eq">{t('calc.cupEq').replace('{g}', String(Math.round(cupG * 10) / 10))}</span>
+                    </div>
                   </div>
-                  {isRatioWarn(ratioN) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
+                  {isRatioWarn(ratioN, ratioMin, ratioMax) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
                   {advanced && <p className="next">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
                   <button type="button" className="cta" onClick={() => setStep('preview')}>{t('app.start')}</button>
                 </div>
@@ -287,7 +304,7 @@ export default function App() {
             {step === 'preview' && (
               <div className="surface screen-enter">
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
-                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {f.waterAccumulatedG} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
+                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep('summary')}>{t('app.back')}</button>
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
@@ -300,12 +317,13 @@ export default function App() {
               return (
               <div className="surface timer-col screen-enter" aria-live="polite">
                 <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
-                <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b>{Math.ceil(timer.leftMs / 1000)}s</b></div></div>
-                <h2 className="mega">{fase.waterAccumulatedG} g</h2>
+                <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b data-testid="timer-elapsed">{fmtMs(timer.totalElapsedMs)}</b></div></div>
+                <h2 className="mega">{scaledG(fase.waterAccumulatedG)} g</h2>
                 <p><b>{t(fase.instructionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.phases.length)}/{recipe.phases.length}</p>
                 {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 <div className="timer-actions">
                   {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
+                  {timer.state === 'paused' && <button type="button" className="cta" data-testid="resume-btn" onClick={timer.resume}>{t('timer.resume')}</button>}
                   <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
                   <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{t('timer.mute')}: {muted ? 'on' : 'off'}</button>
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>
@@ -456,12 +474,12 @@ export default function App() {
               returnFocusRef={createBtnRef}
               onClose={() => setCreateOpen(false)}
               onSave={(input) => {
+                const lim = limitsFor(input.methodId);
                 try {
-                  const lim = limitsFor(input.methodId);
                   const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
                   const cmax = lim?.cupsMax ?? CONFIG.cupsMax;
                   const waterNeed = input.coffeeDefaultG * input.ratio;
-                  if ((lim?.coffeeMaxG && input.coffeeDefaultG > lim.coffeeMaxG) || waterNeed > wmax || waterNeed / CONFIG.gramsPerCup > cmax + 1e-9) {
+                  if ((lim?.coffeeMaxG && input.coffeeDefaultG > lim.coffeeMaxG) || waterNeed > wmax || waterNeed / methodCupG(lim) > cmax + 1e-9) {
                     const mName = t(cat.methods.find(m => m.id === input.methodId)?.nameKey ?? input.methodId);
                     return t('method.limitHint').replace('{tazas}', String(cmax)).replace('{agua}', String(wmax)).replace('{metodo}', mName);
                   }
@@ -478,7 +496,9 @@ export default function App() {
                   setTab('brew');
                   return null;
                 } catch {
-                  return t('error.coffee-range');
+                  return t('error.coffee-range')
+                    .replace('{min}', '1')
+                    .replace('{max}', String(lim?.coffeeMaxG ?? CONFIG.coffeeMaxG));
                 }
               }}
             />

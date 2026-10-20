@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased] — 026 reescritura completa de la suite de tests
+### Added
+- `tests/` nueva suite (13 archivos, 118 tests) que reemplaza la anterior (14 archivos, orientada a tareas puntuales): unit (`calc`, `schemas`, `custom-recipes`, `favorites`), contrato de datos (`catalog`, `i18n`, `quality`), hook (`use-timer` con fake timers sobre la rejilla rAF de 16 ms) e integración UI (`app-shell`, `brew-flow`, `recipes`, `settings`, `discovery`) con `happy-dom` + Testing Library.
+- `tests/helpers.tsx` (`renderApp`, `tEs`, `stubRandom`) y `tests/setup.ts` (cleanup por test, `localStorage.clear`, `vi.restoreAllMocks`).
+- `tests/quality.test.ts`: invariantes reales conservados de la suite vieja — sin `innerHTML`/`dangerouslySetInnerHTML`/`document.write` en `src/`.
+- Dependencias dev: `happy-dom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`.
+- `vite.config.ts`: bloque `test` de Vitest (`environment: 'happy-dom'`, `setupFiles`).
+### Changed
+- `src/components/RecipeCreateModal.tsx`: fix real detectado por la suite — `method.limitHint` se interpolaba con claves crudas (`{cups}/{water}/{method}`) en el copy del límite; ahora con los tokens correctos (`{tazas}/{agua}/{metodo}`).
+- Expectativas derivadas de `src/data/*.json` (nunca literales de copy): los tests resuelven textos vía el diccionario i18n y límites vía el catálogo, por lo que sobreviven cambios de catálogo (p. ej. la expansión de 4 → 9 métodos).
+### Removed
+- Suite anterior completa: `brand-014`, `brew-water-cups-ratio-023`, `centered-cards-006`, `desktop-012`, `desktop-017`, `discover-013`, `landing-018`, `motion-016`, `polish-004`, `settings.test.ts`, `stability-011`, `stable-005`, `timer-fixes-024` (tests de tareas pasadas/CSS, sin invariante que validar).
+### Notes
+- Workaround documentado en `tests/setup.ts`: happy-env re-dispara eventos burbujeados de `<label>` a su control, duplicando clicks en botones dentro de labels; parche `preventDefault()` dirigido solo a targets `BUTTON`.
+- Hallazgo: claves `grind.*` referenciadas por `methods.json` — verificado paridad i18n en la suite de contrato.
+### Verified
+- `npm test` 118/118, `npm run build` limpio (tsc + Vite/PWA).
+
 ## [Unreleased] — 025 landing de bienvenida antes del home
 ### Added
 - `src/components/Landing.tsx`: nuevo componente de bienvenida — capa glass translúcida (`.landing-glass`, backdrop-blur + borde), marca, título de bienvenida, subtítulo explicativo y CTA de entrada; render centrado en `100dvh`, sin scroll, mobile + desktop; copy vía i18n; sin `innerHTML` ni llamadas de red.

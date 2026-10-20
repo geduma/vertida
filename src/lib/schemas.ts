@@ -14,7 +14,8 @@ export const PhaseSchema = z.object({
 
 export const MethodLimitsSchema = z.object({
   cupsMax: z.number().int().min(1).max(10),
-  waterMaxG: z.number().int().min(100).max(5000),
+  // Floor is 60 g: a single espresso dose (the smallest method cap in methods.json)
+  waterMaxG: z.number().int().min(60).max(5000),
   coffeeMaxG: z.number().min(1).max(100).optional(),
   ratioMin: z.number().min(1).max(50).optional(),
   ratioMax: z.number().min(1).max(50).optional(),

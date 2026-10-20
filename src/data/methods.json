@@ -9,15 +9,15 @@
       "grindKey": "grind.media",
       "order": 1,
       "limits": {
-        "cupsMax": 4,
-        "waterMaxG": 1000,
-        "coffeeMaxG": 60,
+        "cupsMax": 2,
+        "waterMaxG": 420,
+        "coffeeMaxG": 30,
         "ratioMin": 14,
         "ratioMax": 18
       },
       "parameters": {
         "temperatureC": 93,
-        "totalTimeS": 180
+        "totalTimeS": 210
       }
     },
     {
@@ -28,15 +28,15 @@
       "grindKey": "grind.media-gruesa",
       "order": 2,
       "limits": {
-        "cupsMax": 6,
-        "waterMaxG": 1500,
-        "coffeeMaxG": 90,
+        "cupsMax": 4,
+        "waterMaxG": 840,
+        "coffeeMaxG": 55,
         "ratioMin": 14,
         "ratioMax": 17
       },
       "parameters": {
         "temperatureC": 93,
-        "totalTimeS": 240
+        "totalTimeS": 285
       }
     },
     {
@@ -48,14 +48,14 @@
       "order": 3,
       "limits": {
         "cupsMax": 1,
-        "waterMaxG": 250,
-        "coffeeMaxG": 22,
+        "waterMaxG": 210,
+        "coffeeMaxG": 18,
         "ratioMin": 12,
         "ratioMax": 15
       },
       "parameters": {
-        "temperatureC": 85,
-        "totalTimeS": 120
+        "temperatureC": 92,
+        "totalTimeS": 150
       }
     },
     {
@@ -67,14 +67,109 @@
       "order": 4,
       "limits": {
         "cupsMax": 4,
-        "waterMaxG": 1000,
+        "waterMaxG": 840,
         "coffeeMaxG": 60,
         "ratioMin": 14,
         "ratioMax": 17
       },
       "parameters": {
         "temperatureC": 93,
-        "totalTimeS": 240
+        "totalTimeS": 300
+      }
+    },
+    {
+      "id": "kalita-wave",
+      "nameKey": "method.kalita.name",
+      "descriptionKey": "method.kalita.desc",
+      "icon": "kalita",
+      "grindKey": "grind.media",
+      "order": 5,
+      "limits": {
+        "cupsMax": 4,
+        "waterMaxG": 840,
+        "coffeeMaxG": 55,
+        "ratioMin": 15,
+        "ratioMax": 17
+      },
+      "parameters": {
+        "temperatureC": 93,
+        "totalTimeS": 210
+      }
+    },
+    {
+      "id": "siphon",
+      "nameKey": "method.siphon.name",
+      "descriptionKey": "method.siphon.desc",
+      "icon": "siphon",
+      "grindKey": "grind.media",
+      "order": 6,
+      "limits": {
+        "cupsMax": 2,
+        "waterMaxG": 420,
+        "coffeeMaxG": 30,
+        "ratioMin": 12,
+        "ratioMax": 16
+      },
+      "parameters": {
+        "temperatureC": 93,
+        "totalTimeS": 150
+      }
+    },
+    {
+      "id": "clever-dripper",
+      "nameKey": "method.clever.name",
+      "descriptionKey": "method.clever.desc",
+      "icon": "clever",
+      "grindKey": "grind.media-gruesa",
+      "order": 7,
+      "limits": {
+        "cupsMax": 2,
+        "waterMaxG": 420,
+        "coffeeMaxG": 28,
+        "ratioMin": 14,
+        "ratioMax": 17
+      },
+      "parameters": {
+        "temperatureC": 93,
+        "totalTimeS": 270
+      }
+    },
+    {
+      "id": "espresso",
+      "nameKey": "method.espresso.name",
+      "descriptionKey": "method.espresso.desc",
+      "icon": "espresso",
+      "grindKey": "grind.fina",
+      "order": 8,
+      "limits": {
+        "cupsMax": 1,
+        "waterMaxG": 60,
+        "coffeeMaxG": 22,
+        "ratioMin": 1.5,
+        "ratioMax": 2.5
+      },
+      "parameters": {
+        "temperatureC": 93,
+        "totalTimeS": 30
+      }
+    },
+    {
+      "id": "moka",
+      "nameKey": "method.moka.name",
+      "descriptionKey": "method.moka.desc",
+      "icon": "moka",
+      "grindKey": "grind.fina-media",
+      "order": 9,
+      "limits": {
+        "cupsMax": 1,
+        "waterMaxG": 210,
+        "coffeeMaxG": 30,
+        "ratioMin": 6,
+        "ratioMax": 8
+      },
+      "parameters": {
+        "temperatureC": 95,
+        "totalTimeS": 300
       }
     }
   ]
