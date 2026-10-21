@@ -539,8 +539,8 @@ export default function App() {
             />
             <div className="setting-row"><span className="setting-label">{t('settings.version')}</span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
               <div className="setting-row"><span className="setting-label">{t('settings.update')}<small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.update')}</button></div>
-              <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
               <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
+              <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
             </div>
           </section>
         )}

@@ -470,6 +470,13 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
   .cta:hover:not(:active){opacity:0.9;filter:brightness(1.05)}
 }
 
+/* Credit "By geduma": follows the theme font color (light/dark), subtle link affordance */
+.credit-link{color:var(--ink);font-weight:700;text-decoration:none}
+.credit-link:hover{color:var(--accent);text-decoration:underline}
+.landing-credit{margin:28px 0 0}
+/* Settings footer credit: centered, last row, no divider */
+.settings-footer{justify-content:center;text-align:center;border-top:0;min-height:0;padding:40px 0 12px;content-visibility:visible}
+
 /* Landing de bienvenida — sin scroll, todo en 100dvh, mobile y desktop */
 .landing{
   min-height:100dvh;
