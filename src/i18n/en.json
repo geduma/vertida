@@ -163,5 +163,15 @@
   "error.required": "Give the recipe a name",
   "error.ratio-range": "Ratio {min}–{max}",
   "settings.equipmentSave": "Save",
-  "settings.themeCurrent": "Current"
+  "settings.themeCurrent": "Current",
+  "app.credit": "By geduma",
+  "settings.version": "Version",
+  "settings.update": "Check for updates",
+  "settings.updateDesc": "Checks for a newer version",
+  "settings.updateChecking": "Checking…",
+  "settings.updateModalTitle": "Version up to date",
+  "settings.updateModalBody": "You're on the latest version of Vertida ({version}).",
+  "settings.updateClose": "Got it",
+  "settings.updateFailed": "Couldn't check for updates",
+  "settings.updateUnavailable": "Updates unavailable here"
 }

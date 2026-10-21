@@ -29,6 +29,7 @@ p{margin:0 0 12px;max-width:65ch}
   .app>section{grid-column:2;gap:28px}
   .home{display:flex;flex-direction:column;gap:24px}
   .home .hero-home{width:100%}
+  .home .method-row{ grid-template-columns:repeat(4, minmax(0,1fr)); }
   .recipes-list{grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))}
   .screen-enter{gap:28px}
   .surface{gap:28px}

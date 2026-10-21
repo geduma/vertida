@@ -163,5 +163,15 @@
   "error.required": "Pon un nombre a la receta",
   "error.ratio-range": "Ratio de {min} a {max}",
   "settings.equipmentSave": "Guardar",
-  "settings.themeCurrent": "Actual"
+  "settings.themeCurrent": "Actual",
+  "app.credit": "By geduma",
+  "settings.version": "Versión",
+  "settings.update": "Buscar actualizaciones",
+  "settings.updateDesc": "Comprueba si hay una versión nueva",
+  "settings.updateChecking": "Buscando…",
+  "settings.updateModalTitle": "Versión actualizada",
+  "settings.updateModalBody": "Tienes la última versión de Vertida ({version}).",
+  "settings.updateClose": "Entendido",
+  "settings.updateFailed": "No se pudo comprobar la actualización",
+  "settings.updateUnavailable": "Actualización no disponible aquí"
 }

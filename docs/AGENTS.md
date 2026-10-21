@@ -31,7 +31,7 @@ src/
   main.tsx
   components/             # Toggle, EquipmentModal, EquipmentIcon, RecipeCreateModal, DiscoveryModal
   lib/                    # loadData, calc (calcCoffee/cupsToWater/isRatioWarn), useTimer, db (idb),
-                          # customRecipes, favorites. No auth module (removed).
+                          # customRecipes, favorites, useAppUpdate (manual PWA update flow). No auth module (removed).
   data/                   # methods.json, recipes/*.json (4), discovery/*.json (3), manifest.json, version.json
   i18n/es.json, en.json   # ALL UI copy lives here, keyed (t(k) falls back es → key)
   theme/tokens.ts, app.css # premium slate tokens, light/dark via [data-theme], Liquid Glass island/sidebar
@@ -70,7 +70,9 @@ Data contract (`src/data/`):
 
 **Calculator/limits:** `waterGN = clamp(waterG, 1, aguaMaxG)`, `ratioN = clamp(ratio, ratioMin, ratioMax)` from `method.limites` (fallback `1–50/16`); `coffeeEff = calcCoffee(water, ratio)`; warn via `isRatioWarn(ratioN)`; hint via `method.limitHint {tazas} {agua} {metodo}`.
 
-**Settings:** language segmented `ES/EN` (`role=radio`, `aria-checked`); theme segmented `Light/Dark/Auto` + `Current: X` sub-label; Advanced `role=switch` Toggle; equipment via modal (footer counter + Save, min 2-col grid, per-method SVG); local-only notice row (no accounts, no session).
+**Settings:** language segmented `ES/EN` (`role=radio`, `aria-checked`); theme segmented `Light/Dark/Auto` + `Current: X` sub-label; Advanced `role=switch` Toggle; equipment via modal (footer counter + Save, min 2-col grid, per-method SVG); version row (`v{__APP_VERSION__}` via vite `define`, `tests/update-credits.test.tsx`); update row wired to `lib/useAppUpdate` (check → apply/reload, feedback `<small aria-live="polite">`); credits row + Landing credit link to `CONFIG.creditUrl`; local-only notice row (no accounts, no session).
+
+**Scroll (feature 001):** the page never scrolls (`html,body{overflow:hidden}`, `.app` height-bounded). Only `.list-scroll` containers scroll (home wrapped region, recipes list, settings list, brew preview); heroes/headers and the tabbar stay fixed. New overflowing list ⇒ add `.list-scroll`, don't scroll the page.
 
 ## 8. Quality gates (run before claiming done)
 

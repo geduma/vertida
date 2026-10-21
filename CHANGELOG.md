@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — 027 PWA: update button, version, credits y scroll acotado
+### Added
+- `src/lib/useAppUpdate.ts`: hook del flujo de actualización manual (US-1) — listener `controllerchange` one-shot (recarga única al tomar control el SW nuevo), `registration.update()`, camino `waiting` (SKIP_WAITING), `installing` (espera acotada 5 s) y ninguno (`uptodate`); estados `idle|checking|uptodate|failed|unavailable` con esperas acotadas.
+- `src/App.tsx` (Ajustes): fila de versión `v{__APP_VERSION__}` (`data-testid="app-version"`), fila de actualización (`data-testid="update-button"`, deshabilitado mientras comprueba, feedback `<small aria-live="polite">`) y fila de créditos (`data-testid="settings-credit"`).
+- `src/components/Landing.tsx`: línea de crédito "By geduma" debajo del CTA (`data-testid="landing-credit"`), enlace a `CONFIG.creditUrl` (`https://geduma.com`) que abre en pestaña nueva (`target="_blank"` + `rel="noopener noreferrer"`); en Ajustes la fila de créditos idéntica.
+- `vite.config.ts`: `define.__APP_VERSION__` inyectado desde `package.json` (fuente única de verdad); `src/env.d.ts` declara el global.
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `app.credit`, `settings.version`, `settings.update`, `settings.updateDesc`, `settings.updateChecking`, `settings.updateUptodate`, `settings.updateFailed`, `settings.updateUnavailable`.
+- `tests/update-credits.test.tsx`: 10 tests — versión, los cuatro caminos del flujo de actualización (seam mockeado de `navigator.serviceWorker`), créditos en Landing y Ajustes, contrato de scroll acotado.
+### Changed
+- `src/theme/app.css`: scroll acotado (US-4) — `html,body{height:100%;overflow:hidden}` (la página deja de scrollear), `.app` height-bounded (`height:100dvh`, `overflow:hidden`) + fila de grid desktop `minmax(0,1fr)`, nuevo `.list-scroll` (flex:1 + `overflow-y:auto` + overscroll contenido + safe areas vía padding de `.app`), `.brew-screen` scrolleable; estilos de crédito `.landing-credit`, `.credit-link`, `.setting-row-credits`.
+- `src/App.tsx`: wrappers de scroll — home (`<div class="home-scroll list-scroll">`, hero fijo), recetas (`.list-scroll` bajo el filtro segmentado, cabecera fija), Ajustes (`surface list-scroll`), brew preview (`surface … list-scroll`); brew running sin cambios.
+- `src/config.ts`: constante `creditUrl` (la URL del crédito nunca va inline en componentes).
+### Verified
+- `npm test` 133/133, `npm run build` limpio (tsc + Vite/PWA, 16 entradas de precache).
+
 ## [Unreleased] — 026 reescritura completa de la suite de tests
 ### Added
 - `tests/` nueva suite (13 archivos, 118 tests) que reemplaza la anterior (14 archivos, orientada a tareas puntuales): unit (`calc`, `schemas`, `custom-recipes`, `favorites`), contrato de datos (`catalog`, `i18n`, `quality`), hook (`use-timer` con fake timers sobre la rejilla rAF de 16 ms) e integración UI (`app-shell`, `brew-flow`, `recipes`, `settings`, `discovery`) con `happy-dom` + Testing Library.
