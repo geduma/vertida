@@ -12,6 +12,8 @@ export const CONFIG = {
   gramsPerCup: 210,
   coffeeDefaultG: 15,
   retentionGramsPerGram: 2,
+  // Maker credit (US-3) — external link, never inline a URL in components
+  creditUrl: 'https://geduma.com',
   // Default selection — must mirror methods.json ids in `order` (see tests/catalog.test.ts)
   equipment: [
     'v60',

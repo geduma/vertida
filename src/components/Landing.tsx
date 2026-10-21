@@ -1,3 +1,5 @@
+import { CONFIG } from '../config';
+
 export default function Landing({ t, onEnter }: { t: (k: string) => string; onEnter: () => void }) {
   return (
     <section className="landing" aria-label={t('landing.welcome')}>
@@ -22,6 +24,9 @@ export default function Landing({ t, onEnter }: { t: (k: string) => string; onEn
         <button type="button" className="landing-cta cta" onClick={onEnter}>
           {t('landing.cta')}
         </button>
+        <p className="landing-credit">
+          <a className="credit-link" data-testid="landing-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a>
+        </p>
       </div>
     </section>
   );

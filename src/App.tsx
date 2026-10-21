@@ -12,6 +12,8 @@ import EquipmentIcon from './components/EquipmentIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
 import DiscoveryModal from './components/DiscoveryModal';
 import Landing from './components/Landing';
+import UpdateDoneModal from './components/UpdateDoneModal';
+import { useAppUpdate } from './lib/useAppUpdate';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
 
@@ -84,6 +86,12 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const timer = useTimer(recipe.phases, muted, recipeId);
   const lastIdxRef = useRef(timer.idx);
+  const { state: updateState, check: checkUpdate, reset: resetUpdate } = useAppUpdate();
+  const [updateDoneOpen, setUpdateDoneOpen] = useState(false);
+  const updateBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (updateState === 'uptodate') setUpdateDoneOpen(true);
+  }, [updateState]);
 
   const clampN = (v: number | '', min: number, max: number, fb: number) =>
     v === '' || !Number.isFinite(v) ? fb : Math.min(max, Math.max(min, v));
@@ -169,7 +177,7 @@ export default function App() {
           const maxCups = Math.max(1, ...cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => m.limits?.cupsMax ?? CONFIG.cupsMax));
           return (
             <section aria-label={t('nav.home')} className="home">
-              <div className="hero hero-home">
+              <div className="hero hero-home home-hero">
                 <p className="hero-meta">{t('home.suggested')}</p>
                 <h2>{t('home.greeting')}</h2>
                 {suggested ? (() => {
@@ -188,11 +196,11 @@ export default function App() {
                   </div>
                 </>)}
               </div>
-              <div className="surface">
+              <div className="surface home-methods">
                 <div className="section-head section-head-static">
                   <div><h2>{t('home.methods')}</h2></div>
                 </div>
-                <div className="method-row">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
+                <div className="method-row home-methods-scroll">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
                   <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
                     <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
                     <span className="method-name">{t(m.nameKey)}</span>
@@ -201,7 +209,7 @@ export default function App() {
                   </button>
                 ))}</div>
               </div>
-              <div className="surface">
+              <div className="surface home-stats">
                 <div className="stats-row">
                   <div className="stat"><b>{visibleClassics.length}</b><span>{t('home.statsRecipes')}</span></div>
                   <div className="stat"><b>{equipmentIds.length}/{cat.methods.length}</b><span>{t('home.statsMethods')}</span></div>
@@ -218,15 +226,15 @@ export default function App() {
           );
         })()}
         {tab === 'brew' && (
-          <section aria-label={t('brew.section')}>
+          <section aria-label={t('brew.section')} className="brew-section">
             {step === 'summary' && (
-              <div className="brew-screen screen-enter">
-                <div className="hero">
+              <div className="brew-screen screen-enter brew-screen-fixed">
+                <div className="hero brew-header">
                   <button type="button" className="back-link" onClick={() => { timer.reset(); setTab(originTab); setStep('summary'); }}>‹ {t(originTab === 'home' ? 'nav.home' : originTab === 'recipes' ? 'nav.recipes' : 'nav.settings')}</button>
                   <h2>{recipeDisplayName(recipe, t)}</h2>
                   <p className="hero-meta">{coffeeEff} g · {water} g · 1:{ratioN} · {recipe.phases.length} phases · ~{Math.round(totalTime / 60)} min</p>
                 </div>
-                <div className="surface">
+                <div className="surface brew-scroll">
                   <div className="grid-2">
                     <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setCups(1); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
                     <label>{t('brew.recipe')} <select value={recipeId} onChange={e => setRecipeId(e.target.value)}>{visible.filter(r => r.methodId === methodId).map(r => <option key={r.id} value={r.id}>{recipeDisplayName(r, t)}</option>)}</select></label>
@@ -302,7 +310,7 @@ export default function App() {
               </div>
             )}
             {step === 'preview' && (
-              <div className="surface screen-enter">
+              <div className="surface screen-enter list-scroll">
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
                 <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
                 <div className="form-actions">
@@ -334,7 +342,7 @@ export default function App() {
               );
             })()}
             {step === 'done' && (
-              <div className="surface screen-enter">
+              <div className="surface screen-enter list-scroll">
                 <h2>{t('timer.ready')}</h2>
                 <p>{recipeDisplayName(recipe, t)} · {water} g</p>
                 <div className="form-actions">
@@ -361,6 +369,7 @@ export default function App() {
               <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFilterMethodId(null); setFavOnly(false); }}>{t('recipes.all')}</button>
               <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
             </div>
+            <div className="list-scroll">
             {(() => {
               const base = (favOnly ? visibleClassics.filter(r => favIds.includes(r.id)) : visibleClassics).filter(r => filterMethodId ? r.methodId === filterMethodId : true);
               if (base.length === 0)
@@ -467,6 +476,7 @@ export default function App() {
                 </div>
               );
             })()}
+            </div>
             <RecipeCreateModal
               open={createOpen}
               methods={cat.methods}
@@ -505,8 +515,9 @@ export default function App() {
           </section>
         )}
         {tab === 'settings' && (
-          <section className="surface" aria-label={t('settings.title')}>
-            <h2>{t('settings.title')}</h2>
+          <section className="surface list-scroll settings-section" aria-label={t('settings.title')}>
+            <h2 className="settings-title">{t('settings.title')}</h2>
+            <div className="settings-body">
             <div className="setting-row"><span className="setting-label">{t('settings.language')}</span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
               <button key={l} type="button" role="radio" aria-checked={lang === l} data-on={lang === l ? 'true' : 'false'} onClick={() => setLang(l)}>{l === 'es' ? 'ES' : 'EN'}</button>
             ))}</div></div>
@@ -526,11 +537,14 @@ export default function App() {
               t={t}
               returnFocusRef={equipBtnRef}
             />
-            <div>
-              <p className="next">{t('settings.localOnly')}</p>
+            <div className="setting-row"><span className="setting-label">{t('settings.version')}</span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
+              <div className="setting-row"><span className="setting-label">{t('settings.update')}<small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.update')}</button></div>
+              <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
+              <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
             </div>
           </section>
         )}
+            <UpdateDoneModal open={updateDoneOpen} version={`v${__APP_VERSION__}`} onClose={() => { setUpdateDoneOpen(false); resetUpdate(); }} t={t} returnFocusRef={updateBtnRef} />
         <DiscoveryModal
           recipe={discoveryOpen ? surprise : null}
           methodName={surprise ? t(cat.methods.find(m => m.id === surprise.methodId)?.nameKey ?? surprise.methodId) : ''}
