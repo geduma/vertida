@@ -4,7 +4,8 @@ import { CONFIG } from './config';
 import { loadCatalog } from './lib/loadData';
 import { calcCoffee, cupSizeG, cupsToWater, isRatioWarn, methodCupG } from './lib/calc';
 import { useTimer } from './lib/useTimer';
-import { db } from './lib/db';
+import { loadEquipmentIds, persistStorage, saveEquipmentIds } from './lib/db';
+import { PREF_KEYS, readFlag, readLang, readThemeMode, writeFlag, writePref, type ThemeMode } from './lib/prefs';
 import es from './i18n/es.json';
 import en from './i18n/en.json';
 import EquipmentModal from './components/EquipmentModal';
@@ -16,8 +17,6 @@ import UpdateDoneModal from './components/UpdateDoneModal';
 import { useAppUpdate } from './lib/useAppUpdate';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
-
-type ThemeMode = 'light' | 'dark' | 'auto';
 
 const dicts: Record<string, Record<string, string>> = { es, en };
 type Tab = 'home' | 'brew' | 'recipes' | 'settings';
@@ -32,14 +31,9 @@ const TABS: { id: OriginTab; labelKey: string }[] = [
 
 export default function App() {
   const cat = useMemo(() => loadCatalog(), []);
-  const [lang, setLang] = useState<'es' | 'en'>(() => (navigator.language.startsWith('en') ? 'en' : 'es'));
+  const [lang, setLang] = useState<'es' | 'en'>(() => readLang(navigator.language.startsWith('en') ? 'en' : 'es'));
   const t = (k: string) => dicts[lang][k] ?? dicts.es[k] ?? k;
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const m = localStorage.getItem('vertida-theme-mode') as ThemeMode | null;
-    if (m === 'light' || m === 'dark' || m === 'auto') return m;
-    const legacy = localStorage.getItem('vertida-theme') as 'light' | 'dark' | null;
-    return legacy ?? 'auto';
-  });
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
@@ -48,22 +42,25 @@ export default function App() {
     const resolve = (): 'light' | 'dark' => (themeMode === 'auto' ? (mq.matches ? 'dark' : 'light') : themeMode);
     setResolvedTheme(resolve());
     document.documentElement.dataset.theme = resolve();
-    localStorage.setItem('vertida-theme-mode', themeMode);
-    localStorage.setItem('vertida-theme', resolve());
+    writePref(PREF_KEYS.themeMode, themeMode);
+    writePref(PREF_KEYS.theme, resolve());
     const onChange = () => {
       if (themeMode === 'auto') {
         const r = mq.matches ? 'dark' : 'light';
         setResolvedTheme(r);
         document.documentElement.dataset.theme = r;
-        localStorage.setItem('vertida-theme', r);
+        writePref(PREF_KEYS.theme, r);
       }
     };
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
   }, [themeMode]);
+  useEffect(() => { writePref(PREF_KEYS.lang, lang); }, [lang]);
   const [tab, setTab] = useState<Tab>('home');
   const [originTab, setOriginTab] = useState<OriginTab>('home');
   const [equipmentIds, setEquipmentIds] = useState<string[]>([...CONFIG.equipment]);
+  const [equipmentReady, setEquipmentReady] = useState(false);
+  const equipmentTouched = useRef(false);
   const [methodId, setMethodId] = useState<string>(CONFIG.equipment[0]);
   const [filterMethodId, setFilterMethodId] = useState<string | null>(null);
   const [customs, setCustoms] = useState<CustomRecipe[]>(() => loadCustomRecipes());
@@ -74,8 +71,8 @@ export default function App() {
   const recipe = [...allClassics, ...cat.discovery].find(r => r.id === recipeId) ?? cat.recipes[0];
   const [cups, setCups] = useState<number>(1);
   const [ratio, setRatio] = useState<number | ''>(recipe.ratio);
-  const [advanced, setAdvanced] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [advanced, setAdvanced] = useState(() => readFlag(PREF_KEYS.advanced));
+  const [muted, setMuted] = useState(() => readFlag(PREF_KEYS.muted));
   const [phaseFlash, setPhaseFlash] = useState(false);
   const [step, setStep] = useState<BrewStep>('summary');
   const [equipOpen, setEquipOpen] = useState(false);
@@ -120,8 +117,10 @@ export default function App() {
   };
   const visible = [...allClassics, ...cat.discovery].filter(r => equipmentIds.includes(r.methodId));
   const visibleClassics = allClassics.filter(r => equipmentIds.includes(r.methodId));
-  const toggleEquipment = (id: string) =>
+  const toggleEquipment = (id: string) => {
+    equipmentTouched.current = true;
     setEquipmentIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  };
   const toggleFav = (id: string) =>
     setFavIds(prev => { const next = toggleFavorite(prev, id); saveFavorites(next); return next; });
   const brewRecipe = (r: { id: string; methodId: string; ratio: number; coffeeDefaultG: number }, origin: OriginTab) => {
@@ -146,9 +145,36 @@ export default function App() {
   };
   const surprise = discoveryPool.find(r => r.id === surpriseId) ?? null;
 
-  useEffect(() => { // Persist equipment selection
-    db().then(d => equipmentIds.forEach(id => d.put('equipment', { id }))).catch(() => {});
-  }, [equipmentIds]);
+  useEffect(() => { // Hydrate the saved equipment selection once, before persisting anything
+    let alive = true;
+    void loadEquipmentIds()
+      .then((saved) => {
+        if (!alive || equipmentTouched.current || saved === null) return;
+        const known = saved.filter(id => cat.methods.some(m => m.id === id));
+        // Nothing survives a data-version change: keep the defaults rather than an empty app.
+        if (saved.length && !known.length) return;
+        setEquipmentIds(known);
+        if (known.length) {
+          // Keep the brew screen on a method that is still selected.
+          setMethodId(prev => (known.includes(prev) ? prev : known[0]));
+          setRecipeId(prev => {
+            const current = cat.recipes.find(r => r.id === prev);
+            if (current && known.includes(current.methodId)) return prev;
+            return cat.recipes.find(r => r.methodId === known[0])?.id ?? prev;
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setEquipmentReady(true); });
+    return () => { alive = false; };
+  }, [cat.methods]);
+  useEffect(() => { // Persist equipment selection (including "nothing selected") after hydration
+    if (!equipmentReady) return;
+    void saveEquipmentIds(equipmentIds).catch(() => {});
+  }, [equipmentIds, equipmentReady]);
+  useEffect(() => { writeFlag(PREF_KEYS.advanced, advanced); }, [advanced]);
+  useEffect(() => { writeFlag(PREF_KEYS.muted, muted); }, [muted]);
+  useEffect(() => { void persistStorage(); }, []);
   useEffect(() => {
     if (timer.idx !== lastIdxRef.current) {
       lastIdxRef.current = timer.idx;

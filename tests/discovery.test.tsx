@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { discoveryData, methodsData, renderApp, stubRandom, tEs } from './helpers';
 
 vi.mock('../src/lib/db', () => ({
-  db: () => Promise.resolve({ put: async () => undefined }),
+  loadEquipmentIds: async () => null,
+  saveEquipmentIds: async () => undefined,
   persistStorage: async () => false,
 }));
 

@@ -1,6 +1,53 @@
-import { RecipeSchema, type Recipe } from './schemas';
+import { RecipeSchema, type PhaseType, type Recipe } from './schemas';
 
 const KEY = 'vertida-custom-recipes';
+
+// Recipes created before the v2 data-contract rename used Spanish field names.
+// They are still the user's own recipes: migrate them instead of purging them.
+const LEGACY_PHASE_TYPES: Record<string, PhaseType> = {
+  bloom: 'bloom',
+  vertido: 'pour',
+  pour: 'pour',
+  espera: 'wait',
+  wait: 'wait',
+  revolver: 'stir',
+  stir: 'stir',
+  manual: 'manual',
+  fin: 'done',
+  done: 'done',
+};
+
+function normalizePhase(item: unknown): Record<string, unknown> | null {
+  if (!item || typeof item !== 'object') return null;
+  const p = item as Record<string, unknown>;
+  const type = p.type ?? (typeof p.tipo === 'string' ? LEGACY_PHASE_TYPES[p.tipo] : undefined);
+  return {
+    type,
+    waterAccumulatedG: p.waterAccumulatedG ?? p.aguaAcumuladaG,
+    durationS: p.durationS ?? p.duracionS,
+    instructionKey: p.instructionKey ?? p.instruccionKey,
+  };
+}
+
+function normalizeRecipe(r: Record<string, unknown>): Record<string, unknown> | null {
+  const rawPhases = Array.isArray(r.phases) ? r.phases : Array.isArray(r.fases) ? r.fases : null;
+  if (!rawPhases) return null;
+  const category = r.category ?? r.categoria;
+  return {
+    id: r.id,
+    methodId: r.methodId,
+    category: category === 'atypical' || category === 'atipica' ? 'atypical' : 'classic',
+    nameKey: r.nameKey ?? r.nombreKey,
+    ratio: r.ratio,
+    coffeeDefaultG: r.coffeeDefaultG ?? r.cafeDefaultG,
+    origin: r.origin ?? r.origen ?? 'custom',
+    difficulty: r.difficulty ?? r.dificultad,
+    tags: r.tags,
+    storyKey: r.storyKey ?? r.historiaKey,
+    phases: rawPhases.map(normalizePhase).filter((p): p is Record<string, unknown> => p !== null),
+    version: r.version ?? 1,
+  };
+}
 
 export type CustomRecipe = Recipe & { custom: true; name: string; notes?: string };
 
@@ -59,18 +106,22 @@ export function loadCustomRecipes(): CustomRecipe[] {
     const arr = JSON.parse(raw) as unknown[];
     if (!Array.isArray(arr)) return [];
     const out: CustomRecipe[] = [];
+    let migrated = false;
     for (const item of arr) {
+      if (!item || typeof item !== 'object') continue;
       const r = item as Record<string, unknown>;
-      // Re-validate base recipe shape; purge corrupt
-      const base = RecipeSchema.safeParse({
-        id: r.id, methodId: r.methodId, category: r.category ?? 'classic',
-        nameKey: r.nameKey, ratio: r.ratio, coffeeDefaultG: r.coffeeDefaultG,
-        origin: r.origin ?? 'custom', difficulty: r.difficulty, tags: r.tags,
-        storyKey: r.storyKey, phases: r.phases, version: r.version ?? 1,
-      });
+      if (!Array.isArray(r.phases) || typeof r.coffeeDefaultG !== 'number' || typeof r.nameKey !== 'string') {
+        migrated = true; // legacy shape, or corrupt enough to need normalization
+      }
+      // Re-validate base recipe shape (accepting the pre-v2 Spanish field names); purge corrupt
+      const base = RecipeSchema.safeParse(normalizeRecipe(r));
       if (!base.success) continue;
       if (typeof r.name !== 'string' || !r.name.trim()) continue;
       out.push({ ...base.data, custom: true, name: r.name.trim(), notes: typeof r.notes === 'string' ? r.notes : undefined });
+    }
+    // Persist the normalized shape so the migration runs once.
+    if (migrated) {
+      try { localStorage.setItem(KEY, JSON.stringify(out)); } catch { /* keep working in-memory */ }
     }
     return out;
   } catch {

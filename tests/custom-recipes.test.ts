@@ -97,6 +97,51 @@ describe('custom recipe persistence', () => {
     expect(loaded[0].id).toBe(a.id);
   });
 
+  it('migrates recipes saved with the pre-v2 Spanish field names instead of purging them', () => {
+    const legacy = {
+      id: 'custom-cafe-abuela-legacy',
+      methodId: 'v60',
+      categoria: 'clasica',
+      nombreKey: 'custom.custom-cafe-abuela-legacy.name',
+      ratio: 16,
+      cafeDefaultG: 15,
+      origen: 'custom',
+      dificultad: 'homemade',
+      tags: ['homemade'],
+      fases: [
+        { tipo: 'bloom', aguaAcumuladaG: 30, duracionS: 30, instruccionKey: 'phase.bloom' },
+        { tipo: 'vertido', aguaAcumuladaG: 144, duracionS: 60, instruccionKey: 'phase.pour' },
+        { tipo: 'vertido', aguaAcumuladaG: 240, duracionS: 60, instruccionKey: 'phase.pour' },
+        { tipo: 'espera', aguaAcumuladaG: 240, duracionS: 30, instruccionKey: 'phase.drain' },
+        { tipo: 'fin', aguaAcumuladaG: 240, duracionS: 0, instruccionKey: 'phase.done' },
+      ],
+      version: 1,
+      custom: true,
+      name: 'Café de la abuela',
+      notes: 'Receta vieja',
+    };
+    localStorage.setItem(KEY, JSON.stringify([legacy]));
+
+    const loaded = loadCustomRecipes();
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0]).toMatchObject({
+      id: legacy.id,
+      methodId: 'v60',
+      category: 'classic',
+      coffeeDefaultG: 15,
+      name: 'Café de la abuela',
+      notes: 'Receta vieja',
+      custom: true,
+    });
+    expect(loaded[0].phases[1]).toMatchObject({ type: 'pour', waterAccumulatedG: 144, durationS: 60 });
+
+    // The normalized shape is written back, so the migration runs only once.
+    const rewritten = JSON.parse(localStorage.getItem(KEY) ?? '[]');
+    expect(rewritten[0].coffeeDefaultG).toBe(15);
+    expect(rewritten[0].phases[0].type).toBe('bloom');
+    expect(rewritten[0]).not.toHaveProperty('fases');
+  });
+
   it('returns [] for broken JSON or non-array payloads', () => {
     localStorage.setItem(KEY, '{no-json');
     expect(loadCustomRecipes()).toEqual([]);

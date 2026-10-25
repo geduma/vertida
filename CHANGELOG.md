@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — 028 persistencia local: IndexedDB, preferencias y recetas propias
+### Fixed
+- `src/lib/db.ts`: la selección de equipos se **lee** de IndexedDB al arrancar (`loadEquipmentIds`) y se guarda de forma atómica (`saveEquipmentIds`, stores `equipment` + `settings`, admite selección vacía); `db()` ya no lanza de forma síncrona cuando IndexedDB no está disponible.
+- `src/App.tsx`: hidratación de equipos antes de persistir — los valores por defecto ya no sobrescriben la selección guardada; `methodId`/`recipeId` se ajustan a un método aún seleccionado y se solicita `navigator.storage.persist()` al arrancar.
+- `src/lib/prefs.ts`: persistencia segura (try/catch) de idioma, tema, modo avanzado y mute; `src/App.tsx` los guarda y restaura al recargar (antes solo se guardaba el tema).
+- `src/lib/customRecipes.ts`: migración de recetas guardadas con el contrato pre-v2 (`cafeDefaultG`, `fases`, `categoria`…) en lugar de descartarlas; se reescriben normalizadas para migrar una sola vez.
+### Added
+- `tests/persistence.test.tsx`: idioma, modo avanzado, equipos y recetas propias sobreviven a un remount (recarga).
+- `tests/custom-recipes.test.ts`: caso de migración legacy; `tests/settings.test.tsx`: hidratación de equipos.
+### Verified
+- `npx tsc -b` limpio y `npm run build` limpio (16 entradas de precache). `npm test` 138/139: el único fallo (`tests/update-credits.test.tsx:128`) es preexistente — `src/theme/app.css` no contiene las reglas `html,body{height:100%;overflow:hidden}` ni `.list-scroll{overflow-y:auto}` que ese test exige desde `dc846ba`.
+
 ## [Unreleased] — 027 PWA: update button, version, credits y scroll acotado
 ### Added
 - `src/lib/useAppUpdate.ts`: hook del flujo de actualización manual (US-1) — listener `controllerchange` one-shot (recarga única al tomar control el SW nuevo), `registration.update()`, camino `waiting` (SKIP_WAITING), `installing` (espera acotada 5 s) y ninguno (`uptodate`); estados `idle|checking|uptodate|failed|unavailable` con esperas acotadas.

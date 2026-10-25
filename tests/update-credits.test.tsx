@@ -5,7 +5,8 @@ import { renderApp, renderLanding, tEs } from './helpers';
 import { CONFIG } from '../src/config';
 
 vi.mock('../src/lib/db', () => ({
-  db: () => Promise.resolve({ put: vi.fn(async () => undefined) }),
+  loadEquipmentIds: async () => null,
+  saveEquipmentIds: async () => undefined,
   persistStorage: async () => false,
 }));
 

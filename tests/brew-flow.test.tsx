@@ -4,7 +4,8 @@ import { renderApp, methodsData, recipesData, stubRandom, tEs } from './helpers'
 import { calcCoffee } from '../src/lib/calc';
 
 vi.mock('../src/lib/db', () => ({
-  db: () => Promise.resolve({ put: async () => undefined }),
+  loadEquipmentIds: async () => null,
+  saveEquipmentIds: async () => undefined,
   persistStorage: async () => false,
 }));
 
