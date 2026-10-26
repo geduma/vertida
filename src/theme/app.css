@@ -1,7 +1,6 @@
 :root{
   --btn-radius:12px;--btn-h-lg:52px;--btn-h-md:48px;--btn-h-sm:40px;
   --input-h:48px;
-  --switch-w:52px;--switch-h:32px;
   --motion-fast:150ms;--motion-normal:300ms;--motion-slow:500ms;--ease:cubic-bezier(0.2,0,0,1);
 }
 :root[data-theme='light']{
@@ -18,14 +17,23 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
+html,body{height:100%;overflow:hidden}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'SF Pro',system-ui,sans-serif;font-size:17px;line-height:1.5}
 h1,h2{line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
 p{margin:0 0 12px;max-width:65ch}
 
-.app{max-width:640px;margin:0 auto;min-height:100dvh;padding:20px 20px calc(110px + env(safe-area-inset-bottom));background:var(--bg);display:flex;flex-direction:column;gap:16px}
-.app>section{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Page never scrolls: the app fills the viewport and only `.list-scroll` regions scroll. */
+.app{max-width:640px;margin:0 auto;height:100dvh;overflow:hidden;padding:20px 20px calc(110px + env(safe-area-inset-bottom));background:var(--bg);display:flex;flex-direction:column;gap:16px}
+@supports not (height:100dvh){.app{height:100vh}}
+.app>section{display:flex;flex-direction:column;gap:16px;min-width:0;min-height:0;flex:1}
+.list-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.home{flex:1;min-height:0}
+.home-scroll{display:flex;flex-direction:column;gap:16px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+.brew-section{flex:1;min-height:0}
+.brew-screen{display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
+.brew-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 @media(min-width:1024px){
-  .app{max-width:1400px;padding:40px 40px 64px;display:grid;grid-template-columns:minmax(260px, 340px) minmax(0, 1fr);gap:32px;align-items:start}
+  .app{max-width:1400px;padding:40px 40px 64px;display:grid;grid-template-columns:minmax(260px, 340px) minmax(0, 1fr);grid-template-rows:minmax(0, 1fr);gap:32px;align-items:stretch}
   .app>section{grid-column:2;gap:28px}
   .home{display:flex;flex-direction:column;gap:24px}
   .home .hero-home{width:100%}
@@ -289,13 +297,6 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .setting-row:first-of-type{border-top:0}
 .setting-label{display:flex;flex-direction:column;gap:2px;font-size:15px;font-weight:700;color:var(--ink);flex:1;min-width:0}
 .setting-label small{font-size:13px;font-weight:400;color:var(--muted)}
-.toggle{width:var(--switch-w);height:var(--switch-h);min-height:var(--switch-h);max-height:var(--switch-h);min-width:var(--switch-w);padding:0;border-radius:999px;background:var(--surface2);border:1px solid var(--border);position:relative;flex:none;flex-shrink:0;display:inline-flex;align-items:center;transition:background-color 150ms ease,border-color 150ms ease}
-.toggle .knob{width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:translateX(3px);transition:transform 150ms ease;flex:none}
-.toggle[data-on='true']{background:var(--accent);border-color:transparent}
-.toggle[data-on='true'] .knob{transform:translateX(23px)}
-.toggle:disabled{opacity:.5}
-.switch-field{display:inline-flex;align-items:center;gap:10px;min-height:var(--btn-h-md);flex:none;flex-shrink:0}
-.switch-state{font-size:13px;font-weight:700;color:var(--muted);min-width:92px;text-align:right;white-space:nowrap;flex:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .equip-summary{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .segmented{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);flex:none;max-width:100%}
@@ -364,18 +365,35 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .timer-actions .cta{grid-column:1/-1;width:100%}
 .timer-actions .btn-secondary{min-width:0;width:100%}
 /* Timer screen: centered on mobile and desktop */
-.timer-col{max-width:560px;margin:0 auto;width:100%;text-align:center}
+.timer-col{max-width:560px;margin:0 auto;width:100%;max-height:100%;overflow-y:auto;text-align:center}
 .timer-col h2,.timer-col p{margin-left:auto;margin-right:auto}
 @media(min-width:1024px){.timer-col{max-width:560px;margin:0 auto;width:100%}}
-/* ES/EN stability — compact, no forced wide widths */
-.setting-row{content-visibility:auto}
-.setting-row:has(.toggle),.setting-row:has(.switch-field){content-visibility:visible;min-height:64px;contain:layout style}
+/* ES/EN stability — same geometry in both languages.
+   Copy is kept short and symmetric in es.json/en.json; here every variable-length
+   element gets a fixed box, so switching language never resizes a row or shifts
+   the rows below it. Titles never wrap; descriptions reserve exactly two lines. */
 .setting-row-theme{flex-direction:column;align-items:stretch;gap:8px;min-height:0;padding:12px 0 14px}
-.setting-row>button{flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setting-row>button,.setting-row>a{flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setting-label-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setting-label small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;height:2.8em;line-height:1.4;white-space:normal;overflow:hidden;text-overflow:ellipsis}
+.btn-equip{width:150px}
+.btn-update{width:104px}
+.btn-feedback{width:120px}
+.segmented-advanced{width:184px}
 .theme-ctl{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:0;text-align:center}
 .theme-ctl .segmented{width:100%;max-width:320px;margin:0 auto}
-.theme-current{display:block;min-height:18px;font-size:12px;line-height:1.5;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;margin:0 auto}
+.theme-current{display:block;height:18px;font-size:12px;line-height:18px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;margin:0 auto}
+.settings-footnote{padding:4px 0 16px}
+.settings-footnote .next{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;height:2.8em;line-height:1.4;margin:0;overflow:hidden}
 .tabbar button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Narrow phones: stack labels above controls so the fixed description box stays readable. */
+@media(max-width:359px){
+  .setting-row{flex-wrap:wrap}
+  .setting-row>.setting-label{flex:1 1 100%}
+  .setting-row>.segmented,.setting-row>.btn-equip,.setting-row>.btn-update,.setting-row>.btn-feedback,.setting-row>.github-link,.setting-row-version .hero-meta{margin-left:auto}
+  .setting-row-version{flex-wrap:nowrap}
+  .setting-row-version>.setting-label{flex:1 1 0}
+}
 .equip-grid{gap:10px}
 @media(max-width:359px){.equip-grid{gap:10px}}
 /* Single-layer glass island (HIG floating tab bar): no scrim, content breathes to the pill */
@@ -398,9 +416,6 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .stat span{font-size:12px;color:var(--muted)}
 .section-head-static{position:static;background:none;backdrop-filter:none;padding:0;margin:0}
 @media (forced-colors:active){
-  .toggle{border:1px solid ButtonBorder}
-  .toggle[data-on='true']{background:Highlight}
-  .toggle .knob{background:ButtonFace;border:1px solid ButtonBorder}
   .equip-card[data-on='true']{border:2px solid Highlight;background:Canvas}
 }
 
@@ -476,6 +491,12 @@ label>select{-webkit-appearance:none;appearance:none;text-align:left;padding-rig
 .landing-credit{margin:28px 0 0}
 /* Settings footer credit: centered, last row, no divider */
 .settings-footer{justify-content:center;text-align:center;border-top:0;min-height:0;padding:40px 0 12px;content-visibility:visible}
+
+/* Settings external links: GitHub icon button + feedback button (anchor styled as button) */
+.github-link{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);text-decoration:none}
+.github-link:hover{color:var(--accent);border-color:var(--accent)}
+.setting-row>a.btn-secondary{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.github-link:focus-visible,.setting-row>a.btn-secondary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* Landing de bienvenida — sin scroll, todo en 100dvh, mobile y desktop */
 .landing{

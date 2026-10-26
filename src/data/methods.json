@@ -6,11 +6,11 @@
       "nameKey": "method.v60.name",
       "descriptionKey": "method.v60.desc",
       "icon": "v60",
-      "grindKey": "grind.media",
+      "grindKey": "grind.medium",
       "order": 1,
       "limits": {
-        "cupsMax": 2,
-        "waterMaxG": 420,
+        "cupsMax": 3,
+        "waterMaxG": 510,
         "coffeeMaxG": 30,
         "ratioMin": 14,
         "ratioMax": 18
@@ -25,7 +25,7 @@
       "nameKey": "method.chemex.name",
       "descriptionKey": "method.chemex.desc",
       "icon": "chemex",
-      "grindKey": "grind.media-gruesa",
+      "grindKey": "grind.medium-coarse",
       "order": 2,
       "limits": {
         "cupsMax": 4,
@@ -44,14 +44,14 @@
       "nameKey": "method.aeropress.name",
       "descriptionKey": "method.aeropress.desc",
       "icon": "aeropress",
-      "grindKey": "grind.fina-media",
+      "grindKey": "grind.medium-fine",
       "order": 3,
       "limits": {
         "cupsMax": 1,
         "waterMaxG": 210,
         "coffeeMaxG": 18,
         "ratioMin": 12,
-        "ratioMax": 15
+        "ratioMax": 18
       },
       "parameters": {
         "temperatureC": 92,
@@ -59,15 +59,15 @@
       }
     },
     {
-      "id": "prensa-francesa",
-      "nameKey": "method.prensa.name",
-      "descriptionKey": "method.prensa.desc",
-      "icon": "prensa",
-      "grindKey": "grind.gruesa",
+      "id": "french-press",
+      "nameKey": "method.french-press.name",
+      "descriptionKey": "method.french-press.desc",
+      "icon": "french-press",
+      "grindKey": "grind.coarse",
       "order": 4,
       "limits": {
-        "cupsMax": 4,
-        "waterMaxG": 840,
+        "cupsMax": 5,
+        "waterMaxG": 1000,
         "coffeeMaxG": 60,
         "ratioMin": 14,
         "ratioMax": 17
@@ -82,18 +82,18 @@
       "nameKey": "method.kalita.name",
       "descriptionKey": "method.kalita.desc",
       "icon": "kalita",
-      "grindKey": "grind.media",
+      "grindKey": "grind.medium",
       "order": 5,
       "limits": {
-        "cupsMax": 4,
-        "waterMaxG": 840,
-        "coffeeMaxG": 55,
+        "cupsMax": 3,
+        "waterMaxG": 500,
+        "coffeeMaxG": 30,
         "ratioMin": 15,
         "ratioMax": 17
       },
       "parameters": {
         "temperatureC": 93,
-        "totalTimeS": 210
+        "totalTimeS": 165
       }
     },
     {
@@ -101,12 +101,12 @@
       "nameKey": "method.siphon.name",
       "descriptionKey": "method.siphon.desc",
       "icon": "siphon",
-      "grindKey": "grind.media",
+      "grindKey": "grind.medium-coarse",
       "order": 6,
       "limits": {
-        "cupsMax": 2,
-        "waterMaxG": 420,
-        "coffeeMaxG": 30,
+        "cupsMax": 3,
+        "waterMaxG": 600,
+        "coffeeMaxG": 40,
         "ratioMin": 12,
         "ratioMax": 16
       },
@@ -120,18 +120,18 @@
       "nameKey": "method.clever.name",
       "descriptionKey": "method.clever.desc",
       "icon": "clever",
-      "grindKey": "grind.media-gruesa",
+      "grindKey": "grind.medium-coarse",
       "order": 7,
       "limits": {
-        "cupsMax": 2,
-        "waterMaxG": 420,
-        "coffeeMaxG": 28,
+        "cupsMax": 3,
+        "waterMaxG": 500,
+        "coffeeMaxG": 33,
         "ratioMin": 14,
         "ratioMax": 17
       },
       "parameters": {
         "temperatureC": 93,
-        "totalTimeS": 270
+        "totalTimeS": 225
       }
     },
     {
@@ -139,7 +139,7 @@
       "nameKey": "method.espresso.name",
       "descriptionKey": "method.espresso.desc",
       "icon": "espresso",
-      "grindKey": "grind.fina",
+      "grindKey": "grind.fine",
       "order": 8,
       "limits": {
         "cupsMax": 1,
@@ -158,14 +158,14 @@
       "nameKey": "method.moka.name",
       "descriptionKey": "method.moka.desc",
       "icon": "moka",
-      "grindKey": "grind.fina-media",
+      "grindKey": "grind.medium-fine",
       "order": 9,
       "limits": {
         "cupsMax": 1,
         "waterMaxG": 210,
         "coffeeMaxG": 30,
-        "ratioMin": 6,
-        "ratioMax": 8
+        "ratioMin": 8,
+        "ratioMax": 12
       },
       "parameters": {
         "temperatureC": 95,

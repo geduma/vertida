@@ -1,5 +1,92 @@
 # Changelog
 
+## [Unreleased] — 032 orden de Ajustes y estabilidad ES↔EN
+### Changed
+- `src/App.tsx` (Ajustes): la fila **Versión** pasa al final, justo antes de la fila de créditos **By geduma** y después del aviso de modo local.
+- `src/i18n/es.json`, `src/i18n/en.json`: copy más corto y simétrico entre idiomas (`settings.themeDesc`, `settings.advanced`, `settings.advancedDesc`, `settings.githubDesc`, `settings.feedback*`, `settings.update*`, `settings.localOnly`) y nueva clave `settings.updateCta` (**Buscar** / **Check**) para que el botón de actualizaciones no dependa del texto largo de la fila.
+- `src/theme/app.css`: geometría fija por fila — títulos en una línea con `ellipsis`, descripciones con caja reservada de 2 líneas (`line-clamp` + `height:2.8em`), ancho fijo para botones de equipos/actualizaciones/feedback, segmented de Avanzado y `theme-current`; se retira `content-visibility:auto` de las filas para que el scroll no cambie al alternar idioma. En pantallas ≤359 px las etiquetas se apilan sobre el control.
+- `tests/update-credits.test.tsx`: contrato de orden (versión penúltima, créditos última) y de geometría fija; `tests/i18n.test.ts`: paridad de longitud del copy de Ajustes (±8 caracteres).
+### Verified
+- `npm test` **150/150 en 16 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 entradas de precache.
+
+## [Unreleased] — 031 enlaces de proyecto y feedback en Ajustes
+### Added
+- `src/config.ts`: `repoUrl` (`https://github.com/geduma/vertida`) e `issuesUrl` (`https://github.com/geduma/vertida/issues/new`); las URLs externas siguen sin escribirse inline en componentes.
+- `src/components/GitHubIcon.tsx`: marca GitHub en SVG decorativo (`aria-hidden`), sin dependencias nuevas.
+- `src/App.tsx` (Ajustes): fila **GitHub** con icono-enlace (`data-testid="settings-github"`, `aria-label`, nueva pestaña con `noopener noreferrer`) y fila **Bugs y comentarios** con botón-enlace que abre un issue nuevo (`data-testid="settings-feedback"`).
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `settings.github`, `settings.githubDesc`, `settings.githubOpen`, `settings.feedback`, `settings.feedbackDesc`, `settings.feedbackCta`.
+- `src/theme/app.css`: `.github-link` (área táctil 44×44, foco visible) y ancla con estilo de botón en las filas de Ajustes.
+- `tests/settings-links.test.tsx`: contrato de URLs, atributos de nueva pestaña, nombre accesible e icono decorativo.
+### Verified
+- `npm test` 146/146 en 16 archivos; `npm run build` limpio (`tsc -b` + Vite/PWA).
+
+## [Unreleased] — 030 pendientes: tags traducidos, preferencias sin migración, DB v2 y toolchain sin vulnerabilidades
+### Added
+- `src/i18n/es.json`, `src/i18n/en.json`: **26 claves `tag.*`** para traducir las etiquetas de datos; los diccionarios quedan en **246 claves por idioma** con paridad exacta. `src/App.tsx` resuelve `tagLabel()` y ya no imprime los slugs en inglés.
+- `docs/VALIDATION.md`: protocolo de validación en taza para las 40 clásicas + 18 descubrimientos (dosis, agua, ratio, tiempo, tags, tres intentos por receta y criterio de aceptación).
+- `docs/PRIVACY.md`: borrador de aviso de privacidad (Ley 1581) en español con resumen en inglés. Deja explícito que **no se recolectan datos de usuario**, que solo se guardan preferencias, favoritos y recetas propias en el almacenamiento local y que no existe base de datos externa.
+- `tests/recipes.test.tsx`: las etiquetas de datos se muestran traducidas.
+- `package.json`: `engines.node >=22.12.0`, alineado con Vite 8 y Vitest 5.
+### Changed
+- Toolchain mayor: **Vite 8.3.5**, **Vitest 5.0.5**, **@vitejs/plugin-react 6.1.2**, **vite-plugin-pwa 2.0.0**, **Zod 4.6.7** y TypeScript 5.9.3.
+- `src/lib/schemas.ts` migrado a **`zod/mini`** con `.check(...)`: mantiene la misma validación y reduce el bundle frente a Zod 4 completo (~64 kB menos).
+- `vite.config.ts`: `pool: 'vmThreads'` para amortiguar el coste de entorno de Vitest 5.
+- `src/lib/db.ts`: IndexedDB sube a **v2** y elimina el store `recipes` sin uso; `equipment` + `settings` siguen siendo la única persistencia IndexedDB.
+- `tests/i18n.test.ts`: ahora exige claves para `grindKey` y para cada `tag` de los datos, además de nombres, descripciones, instrucciones e historias.
+- `src/i18n/*.json`: el aviso de modo local dice explícitamente "sin cuenta ni servidor; tus datos no salen de tu dispositivo", en línea con `docs/PRIVACY.md`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: cifras reales (143 tests, 267.18 kB JS, 0 vulnerabilidades), persistencia v2, tags traducidos y enlaces a los documentos nuevos.
+### Fixed
+- Favoritos: se decidió **no conservar** los guardados con ids pre-v2. Dejan de coincidir y el usuario puede borrar sus datos; no se inventa un mapeo receta a receta. La migración de método (`prensa-francesa`) y de campos en recetas propias se mantiene porque es contenido, no preferencia.
+- `npm audit`: de **11 vulnerabilidades (2 críticas, 3 altas)** a **0**, sin `--force` y con tests/build verdes.
+- Bundle: de 300.94 kB (80.86 kB gzip) a **267.18 kB (74.90 kB gzip)** pese a subir de major el toolchain.
+### Removed
+- Store IndexedDB `recipes` (reservado y sin uso desde su creación).
+- Dependencia implícita de Zod 4 completo en el bundle de producción.
+- Cualquier migración de favoritos pre-v2: se acepta que las preferencias viejas se pierdan.
+### Verified
+- `npm test` **143/143 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite 8/PWA): **267.18 kB JS (74.90 kB gzip)**, **22.86 kB CSS**, 16 entradas de precache; `npm audit` **0 vulnerabilidades**.
+### Notes
+- El aviso de privacidad es un **borrador** con placeholders de responsable y contacto; no afirmar cumplimiento legal hasta la revisión.
+- La validación en taza **no se ejecutó**: `docs/VALIDATION.md` es el protocolo, no evidencia.
+- No volver a importar `zod` completo: el bundle crece ~64 kB y rompe el NFR de tamaño.
+- Vitest 5 tarda ~40 s en 15 archivos (antes ~decenas de segundos menos); es coste de la versión mayor, mitigado con `vmThreads`.
+
+## [Unreleased] — 029 catálogo ampliado, i18n completo y scroll real
+### Added
+- `src/data/recipes.json`: catálogo clásico ampliado de 18 a **40 recetas** (3–6 por método), con ids en inglés (`v60-balanced`, `chemex-three-pours`, `french-press-light-17`, `moka-partners-12`…), `difficulty` normalizada a `easy|medium|advanced` y `tags` en inglés.
+- `src/data/discovery.json`: **18 descubrimientos** atípicos (antes 9), todos con `storyKey`; nuevas claves de instrucción `phase.bypass`, `phase.ice` y `phase.preinfusion` (los tipos de fase del esquema no cambian).
+- `src/lib/legacyIds.ts`: mapa `prensa-francesa → french-press` para equipos guardados en IndexedDB y recetas propias antiguas; se aplica al hidratar equipos (`src/App.tsx`) y al normalizar recetas (`src/lib/customRecipes.ts`).
+- `tests/custom-recipes.test.ts`: cobertura del mapa de ids legacy; `tests/settings.test.tsx`: un equipo guardado con id antiguo se migra en vez de perderse.
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `recipe.meta`, `recipe.minutes`, `brew.summaryMeta`, `brew.phaseProgress`, `phase.manual`, `phase.bypass`, `phase.ice`, `phase.preinfusion`, `common.on`, `common.off`, `timer.muteOn`, `timer.muteOff`, `difficulty.easy|medium|advanced`, `method.french-press.*`, `grind.*` en inglés y los nombres/historias del catálogo nuevo (220 claves por idioma, paridad exacta).
+### Changed
+- `src/data/methods.json`: ids/iconos de método en inglés (`french-press`), `grindKey` normalizadas (`grind.medium`, `grind.medium-coarse`, `grind.medium-fine`, `grind.coarse`, `grind.fine`); límites actualizados (v60 3 tazas/510 g, prensa 5/1000, etc.).
+- `src/App.tsx`, `src/components/DiscoveryModal.tsx`: metadatos de receta, resumen, progreso `fase i/n`, etiqueta `manual`, mute y `On/Off` ahora salen de i18n; `difficultyLabel()` traduce la dificultad y elimina tildes del slug.
+- `src/components/EquipmentIcon.tsx`: `SUPPORTED_ICON_IDS` usa `french-press` (la forma dibujada no cambia); `src/config.ts` alinea `CONFIG.equipment` con `methods.json`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: reescritos sobre el árbol real (9 métodos, 40+18 recetas, persistencia, scroll, scripts reales, sin `manifest.json` ni `validate:data`).
+### Fixed
+- Scroll acotado real: `src/theme/app.css` añade `html,body{height:100%;overflow:hidden}`, `.app` con `100dvh` + `overflow:hidden`, y las regiones `.list-scroll`, `.home-scroll`, `.brew-scroll`; el test `tests/update-credits.test.tsx` vuelve a pasar.
+- `src/data/methods.json`: el tope de agua de v60 sube a 510 g para cubrir la receta `v60-hoffmann-30` (30 g × 16.67 = 500.1 g) sin romper el contrato de límites.
+- `tests/`: referencias a ids retirados actualizadas (`v60-balanced`, `aeropress-classic-15`, `chemex-balanced-16`), ratios esperados derivados de datos y textos de mute/fase/progreso vía i18n; ya no quedan literales `'On'`.
+### Removed
+- Código y CSS muertos: `src/components/Brand.tsx`, `src/components/Toggle.tsx`, `src/theme/tokens.ts`, `renderCard`/`cards` en `src/App.tsx`, variables `lim`/`wmax` sin uso y reglas `.toggle`/`.switch-field`/`.switch-state` (incluido forced-colors).
+- Claves i18n sin uso (recetas del catálogo anterior, `method.prensa.*`, `phase.flip`, `phase.tonic`, `calc.water`, `timer.mute`, etc.).
+### Verified
+- `npm test` **142/142 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **300.94 kB JS (80.86 kB gzip)**, **23.16 kB CSS**, 16 entradas de precache.
+### Notes
+- Cambio de contrato de datos: los ids de receta y el id de método `prensa-francesa` cambiaron. Los favoritos guardados con ids viejos dejan de coincidir (no hay mapeo posible receta a receta); equipos y recetas propias sí se migran.
+
+## [Unreleased] — 028 persistencia local: IndexedDB, preferencias y recetas propias
+### Fixed
+- `src/lib/db.ts`: la selección de equipos se **lee** de IndexedDB al arrancar (`loadEquipmentIds`) y se guarda de forma atómica (`saveEquipmentIds`, stores `equipment` + `settings`, admite selección vacía); `db()` ya no lanza de forma síncrona cuando IndexedDB no está disponible.
+- `src/App.tsx`: hidratación de equipos antes de persistir — los valores por defecto ya no sobrescriben la selección guardada; `methodId`/`recipeId` se ajustan a un método aún seleccionado y se solicita `navigator.storage.persist()` al arrancar.
+- `src/lib/prefs.ts`: persistencia segura (try/catch) de idioma, tema, modo avanzado y mute; `src/App.tsx` los guarda y restaura al recargar (antes solo se guardaba el tema).
+- `src/lib/customRecipes.ts`: migración de recetas guardadas con el contrato pre-v2 (`cafeDefaultG`, `fases`, `categoria`…) en lugar de descartarlas; se reescriben normalizadas para migrar una sola vez.
+### Added
+- `tests/persistence.test.tsx`: idioma, modo avanzado, equipos y recetas propias sobreviven a un remount (recarga).
+- `tests/custom-recipes.test.ts`: caso de migración legacy; `tests/settings.test.tsx`: hidratación de equipos.
+### Verified
+- `npx tsc -b` limpio y `npm run build` limpio (16 entradas de precache). `npm test` 138/139: el único fallo (`tests/update-credits.test.tsx:128`) es preexistente — `src/theme/app.css` no contiene las reglas `html,body{height:100%;overflow:hidden}` ni `.list-scroll{overflow-y:auto}` que ese test exige desde `dc846ba`.
+
 ## [Unreleased] — 027 PWA: update button, version, credits y scroll acotado
 ### Added
 - `src/lib/useAppUpdate.ts`: hook del flujo de actualización manual (US-1) — listener `controllerchange` one-shot (recarga única al tomar control el SW nuevo), `registration.update()`, camino `waiting` (SKIP_WAITING), `installing` (espera acotada 5 s) y ninguno (`uptodate`); estados `idle|checking|uptodate|failed|unavailable` con esperas acotadas.
@@ -14,6 +101,9 @@
 - `src/config.ts`: constante `creditUrl` (la URL del crédito nunca va inline en componentes).
 ### Verified
 - `npm test` 133/133, `npm run build` limpio (tsc + Vite/PWA, 16 entradas de precache).
+
+### Corrección (029)
+- La afirmación de scroll de esta entrada no estaba en el árbol: `src/theme/app.css` nunca incluyó `html,body{height:100%;overflow:hidden}` ni `.list-scroll`, por lo que el contrato de `tests/update-credits.test.tsx` fallaba desde `dc846ba`. Se implementó de verdad en 029.
 
 ## [Unreleased] — 026 reescritura completa de la suite de tests
 ### Added

@@ -3,12 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { flush, methodsData, renderApp, recipesData, tEs } from './helpers';
 
 vi.mock('../src/lib/db', () => ({
-  db: () => Promise.resolve({ put: async () => undefined }),
+  loadEquipmentIds: async () => null,
+  saveEquipmentIds: async () => undefined,
   persistStorage: async () => false,
 }));
 
-const v60 = recipesData.find(r => r.id === 'v60-clasica')!;
-const chemex = recipesData.find(r => r.id === 'chemex-clasica')!;
+const v60 = recipesData.find(r => r.id === 'v60-balanced')!;
+const chemex = recipesData.find(r => r.id === 'chemex-balanced-16')!;
 const v60Name = tEs(v60.nameKey);
 const chemexName = tEs(chemex.nameKey);
 
@@ -76,6 +77,15 @@ describe('recipes list', () => {
     renderApp();
     goRecipes();
     expect(screen.queryByRole('button', { name: new RegExp(`^${tEs('recipes.delete')}`) })).toBeNull();
+  });
+
+  it('translates data tags instead of printing the raw English slugs', () => {
+    renderApp();
+    goRecipes();
+    const tags = within(card(v60Name)).getByText(
+      `${tEs('tag.balanced')} · ${tEs('tag.clean')}`,
+    );
+    expect(tags.textContent).not.toBe('balanced · clean');
   });
 });
 

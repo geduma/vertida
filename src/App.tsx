@@ -4,11 +4,14 @@ import { CONFIG } from './config';
 import { loadCatalog } from './lib/loadData';
 import { calcCoffee, cupSizeG, cupsToWater, isRatioWarn, methodCupG } from './lib/calc';
 import { useTimer } from './lib/useTimer';
-import { db } from './lib/db';
+import { loadEquipmentIds, persistStorage, saveEquipmentIds } from './lib/db';
+import { PREF_KEYS, readFlag, readLang, readThemeMode, writeFlag, writePref, type ThemeMode } from './lib/prefs';
+import { mapLegacyMethodId } from './lib/legacyIds';
 import es from './i18n/es.json';
 import en from './i18n/en.json';
 import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
+import GitHubIcon from './components/GitHubIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
 import DiscoveryModal from './components/DiscoveryModal';
 import Landing from './components/Landing';
@@ -16,8 +19,6 @@ import UpdateDoneModal from './components/UpdateDoneModal';
 import { useAppUpdate } from './lib/useAppUpdate';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
-
-type ThemeMode = 'light' | 'dark' | 'auto';
 
 const dicts: Record<string, Record<string, string>> = { es, en };
 type Tab = 'home' | 'brew' | 'recipes' | 'settings';
@@ -32,14 +33,19 @@ const TABS: { id: OriginTab; labelKey: string }[] = [
 
 export default function App() {
   const cat = useMemo(() => loadCatalog(), []);
-  const [lang, setLang] = useState<'es' | 'en'>(() => (navigator.language.startsWith('en') ? 'en' : 'es'));
+  const [lang, setLang] = useState<'es' | 'en'>(() => readLang(navigator.language.startsWith('en') ? 'en' : 'es'));
   const t = (k: string) => dicts[lang][k] ?? dicts.es[k] ?? k;
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const m = localStorage.getItem('vertida-theme-mode') as ThemeMode | null;
-    if (m === 'light' || m === 'dark' || m === 'auto') return m;
-    const legacy = localStorage.getItem('vertida-theme') as 'light' | 'dark' | null;
-    return legacy ?? 'auto';
-  });
+  const difficultyLabel = (d?: string) => {
+    if (!d) return '';
+    const slug = d.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return dicts[lang][`difficulty.${slug}`] ?? dicts.es[`difficulty.${slug}`] ?? d;
+  };
+  /** Data tags are stable English slugs; copy lives under `tag.<slug>` so the UI stays translated. */
+  const tagLabel = (tag: string) => {
+    const slug = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return dicts[lang][`tag.${slug}`] ?? dicts.es[`tag.${slug}`] ?? tag;
+  };
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
@@ -48,22 +54,25 @@ export default function App() {
     const resolve = (): 'light' | 'dark' => (themeMode === 'auto' ? (mq.matches ? 'dark' : 'light') : themeMode);
     setResolvedTheme(resolve());
     document.documentElement.dataset.theme = resolve();
-    localStorage.setItem('vertida-theme-mode', themeMode);
-    localStorage.setItem('vertida-theme', resolve());
+    writePref(PREF_KEYS.themeMode, themeMode);
+    writePref(PREF_KEYS.theme, resolve());
     const onChange = () => {
       if (themeMode === 'auto') {
         const r = mq.matches ? 'dark' : 'light';
         setResolvedTheme(r);
         document.documentElement.dataset.theme = r;
-        localStorage.setItem('vertida-theme', r);
+        writePref(PREF_KEYS.theme, r);
       }
     };
     mq.addEventListener?.('change', onChange);
     return () => mq.removeEventListener?.('change', onChange);
   }, [themeMode]);
+  useEffect(() => { writePref(PREF_KEYS.lang, lang); }, [lang]);
   const [tab, setTab] = useState<Tab>('home');
   const [originTab, setOriginTab] = useState<OriginTab>('home');
   const [equipmentIds, setEquipmentIds] = useState<string[]>([...CONFIG.equipment]);
+  const [equipmentReady, setEquipmentReady] = useState(false);
+  const equipmentTouched = useRef(false);
   const [methodId, setMethodId] = useState<string>(CONFIG.equipment[0]);
   const [filterMethodId, setFilterMethodId] = useState<string | null>(null);
   const [customs, setCustoms] = useState<CustomRecipe[]>(() => loadCustomRecipes());
@@ -74,8 +83,8 @@ export default function App() {
   const recipe = [...allClassics, ...cat.discovery].find(r => r.id === recipeId) ?? cat.recipes[0];
   const [cups, setCups] = useState<number>(1);
   const [ratio, setRatio] = useState<number | ''>(recipe.ratio);
-  const [advanced, setAdvanced] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [advanced, setAdvanced] = useState(() => readFlag(PREF_KEYS.advanced));
+  const [muted, setMuted] = useState(() => readFlag(PREF_KEYS.muted));
   const [phaseFlash, setPhaseFlash] = useState(false);
   const [step, setStep] = useState<BrewStep>('summary');
   const [equipOpen, setEquipOpen] = useState(false);
@@ -120,13 +129,13 @@ export default function App() {
   };
   const visible = [...allClassics, ...cat.discovery].filter(r => equipmentIds.includes(r.methodId));
   const visibleClassics = allClassics.filter(r => equipmentIds.includes(r.methodId));
-  const toggleEquipment = (id: string) =>
+  const toggleEquipment = (id: string) => {
+    equipmentTouched.current = true;
     setEquipmentIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  };
   const toggleFav = (id: string) =>
     setFavIds(prev => { const next = toggleFavorite(prev, id); saveFavorites(next); return next; });
   const brewRecipe = (r: { id: string; methodId: string; ratio: number; coffeeDefaultG: number }, origin: OriginTab) => {
-    const lim = limitsFor(r.methodId);
-    const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG;
     setRecipeId(r.id); setMethodId(r.methodId);
     setCups(1);
     setRatio(r.ratio); setOriginTab(origin); setStep('summary'); setTab('brew');
@@ -146,9 +155,36 @@ export default function App() {
   };
   const surprise = discoveryPool.find(r => r.id === surpriseId) ?? null;
 
-  useEffect(() => { // Persist equipment selection
-    db().then(d => equipmentIds.forEach(id => d.put('equipment', { id }))).catch(() => {});
-  }, [equipmentIds]);
+  useEffect(() => { // Hydrate the saved equipment selection once, before persisting anything
+    let alive = true;
+    void loadEquipmentIds()
+      .then((saved) => {
+        if (!alive || equipmentTouched.current || saved === null) return;
+        const known = saved.map(mapLegacyMethodId).filter(id => cat.methods.some(m => m.id === id));
+        // Nothing survives a data-version change: keep the defaults rather than an empty app.
+        if (saved.length && !known.length) return;
+        setEquipmentIds(known);
+        if (known.length) {
+          // Keep the brew screen on a method that is still selected.
+          setMethodId(prev => (known.includes(prev) ? prev : known[0]));
+          setRecipeId(prev => {
+            const current = cat.recipes.find(r => r.id === prev);
+            if (current && known.includes(current.methodId)) return prev;
+            return cat.recipes.find(r => r.methodId === known[0])?.id ?? prev;
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setEquipmentReady(true); });
+    return () => { alive = false; };
+  }, [cat.methods]);
+  useEffect(() => { // Persist equipment selection (including "nothing selected") after hydration
+    if (!equipmentReady) return;
+    void saveEquipmentIds(equipmentIds).catch(() => {});
+  }, [equipmentIds, equipmentReady]);
+  useEffect(() => { writeFlag(PREF_KEYS.advanced, advanced); }, [advanced]);
+  useEffect(() => { writeFlag(PREF_KEYS.muted, muted); }, [muted]);
+  useEffect(() => { void persistStorage(); }, []);
   useEffect(() => {
     if (timer.idx !== lastIdxRef.current) {
       lastIdxRef.current = timer.idx;
@@ -184,7 +220,7 @@ export default function App() {
                   const sName = recipeDisplayName(suggested, t);
                   const sSecs = suggested.phases.reduce((a, f) => a + f.durationS, 0);
                   return (<>
-                    <p className="hero-meta">{sName} · 1:{suggested.ratio} · {suggested.coffeeDefaultG}g · ~{Math.max(1, Math.round(sSecs / 60))} min</p>
+                    <p className="hero-meta">{sName} · 1:{suggested.ratio} · {suggested.coffeeDefaultG}g · {t('recipe.minutes').replace('{min}', String(Math.max(1, Math.round(sSecs / 60))))}</p>
                     <div className="form-actions">
                       <button type="button" className="cta" onClick={() => brewRecipe(suggested, 'home')}>{t('home.prepare')}: {sName}</button>
                     </div>
@@ -196,6 +232,7 @@ export default function App() {
                   </div>
                 </>)}
               </div>
+              <div className="home-scroll">
               <div className="surface home-methods">
                 <div className="section-head section-head-static">
                   <div><h2>{t('home.methods')}</h2></div>
@@ -222,6 +259,7 @@ export default function App() {
                     : <p className="next">{t('discover.empty')}</p>}
                 </div>
               </div>
+              </div>
             </section>
           );
         })()}
@@ -232,11 +270,11 @@ export default function App() {
                 <div className="hero brew-header">
                   <button type="button" className="back-link" onClick={() => { timer.reset(); setTab(originTab); setStep('summary'); }}>‹ {t(originTab === 'home' ? 'nav.home' : originTab === 'recipes' ? 'nav.recipes' : 'nav.settings')}</button>
                   <h2>{recipeDisplayName(recipe, t)}</h2>
-                  <p className="hero-meta">{coffeeEff} g · {water} g · 1:{ratioN} · {recipe.phases.length} phases · ~{Math.round(totalTime / 60)} min</p>
+                  <p className="hero-meta">{t('brew.summaryMeta').replace('{coffee}', String(coffeeEff)).replace('{water}', String(water)).replace('{ratio}', String(ratioN)).replace('{phases}', String(recipe.phases.length)).replace('{min}', String(Math.round(totalTime / 60)))}</p>
                 </div>
                 <div className="surface brew-scroll">
                   <div className="grid-2">
-                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { const lim = limitsFor(nid); const wmax = lim?.waterMaxG ?? CONFIG.waterMaxG; setRecipeId(r.id); setCups(1); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
+                    <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { setRecipeId(r.id); setCups(1); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
                     <label>{t('brew.recipe')} <select value={recipeId} onChange={e => setRecipeId(e.target.value)}>{visible.filter(r => r.methodId === methodId).map(r => <option key={r.id} value={r.id}>{recipeDisplayName(r, t)}</option>)}</select></label>
                   </div>
                   <div className="dosis-grid">
@@ -312,7 +350,7 @@ export default function App() {
             {step === 'preview' && (
               <div className="surface screen-enter list-scroll">
                 <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
-                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? '· manual' : ''}</li>)}</ol>
+                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? `· ${t('phase.manual')}` : ''}</li>)}</ol>
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep('summary')}>{t('app.back')}</button>
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
@@ -327,13 +365,13 @@ export default function App() {
                 <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
                 <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b data-testid="timer-elapsed">{fmtMs(timer.totalElapsedMs)}</b></div></div>
                 <h2 className="mega">{scaledG(fase.waterAccumulatedG)} g</h2>
-                <p><b>{t(fase.instructionKey)}</b> · phase {Math.min(timer.idx + 1, recipe.phases.length)}/{recipe.phases.length}</p>
+                <p><b>{t(fase.instructionKey)}</b> · {t('brew.phaseProgress').replace('{i}', String(Math.min(timer.idx + 1, recipe.phases.length))).replace('{n}', String(recipe.phases.length))}</p>
                 {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 <div className="timer-actions">
                   {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
                   {timer.state === 'paused' && <button type="button" className="cta" data-testid="resume-btn" onClick={timer.resume}>{t('timer.resume')}</button>}
                   <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
-                  <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{t('timer.mute')}: {muted ? 'on' : 'off'}</button>
+                  <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{muted ? t('timer.muteOn') : t('timer.muteOff')}</button>
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.cancel')}</button>
                 </div>
@@ -380,48 +418,6 @@ export default function App() {
                 .sort((a, b) => a.order - b.order)
                 .map(m => ({ m, items: base.filter(r => r.methodId === m.id).sort((a, b) => recipeDisplayName(a, t).localeCompare(recipeDisplayName(b, t), lang)) }))
                 .filter(g => g.items.length > 0);
-              const renderCard = (r: (typeof base)[number]) => {
-                const m = cat.methods.find(x => x.id === r.methodId);
-                const secs = r.phases.reduce((a, f) => a + f.durationS, 0);
-                const isCustom = (r as CustomRecipe).custom === true;
-                const name = recipeDisplayName(r, t);
-                const goBrew = () => brewRecipe(r, 'recipes');
-                return (
-                  <article
-                    key={r.id}
-                    className="recipe-card"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${t('brew.prepare')}: ${name}`}
-                    onClick={goBrew}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBrew(); } }}
-                  >
-                    <h3>{name}</h3>
-                    <p className="hero-meta">1:{r.ratio} · {r.coffeeDefaultG}g · {r.phases.length} phases · ~{Math.max(1, Math.round(secs / 60))} min{(r.difficulty ? ` · ${r.difficulty}` : '')}</p>
-                    {isCustom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
-                    {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
-                    {isCustom && (
-                      <div>
-                        <button
-                          type="button"
-                          className="card-delete"
-                          aria-label={`${t('recipes.delete')} ${name}`}
-                          onClick={(e) => { e.stopPropagation(); const next = customs.filter(x => x.id !== r.id); setCustoms(next); saveCustomRecipes(next); }}
-                        >{t('recipes.delete')}</button>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      className="fav-btn"
-                      data-on={favIds.includes(r.id) ? 'true' : 'false'}
-                      aria-pressed={favIds.includes(r.id)}
-                      aria-label={`${t('recipes.favorite')}: ${name}`}
-                      onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
-                    >{favIds.includes(r.id) ? '♥' : '♡'}</button>
-                  </article>
-                );
-              };
-              const cards = groups.flatMap(g => g.items);
               return (
                 <div className="recipes-list">
                   {groups.map(g => (
@@ -446,9 +442,9 @@ export default function App() {
                             >
                               {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nameKey)}</p>}
                               <h3>{recipeDisplayName(r, t)}</h3>
-                              <p className="hero-meta">1:{r.ratio} · {r.coffeeDefaultG}g · {r.phases.length} phases · ~{Math.max(1, Math.round(r.phases.reduce((a, f) => a + f.durationS, 0) / 60))} min{(r.difficulty ? ` · ${r.difficulty}` : '')}</p>
+                              <p className="hero-meta">{t('recipe.meta').replace('{ratio}', String(r.ratio)).replace('{coffee}', String(r.coffeeDefaultG)).replace('{phases}', String(r.phases.length)).replace('{min}', String(Math.max(1, Math.round(r.phases.reduce((a, f) => a + f.durationS, 0) / 60))))}{r.difficulty ? ` · ${difficultyLabel(r.difficulty)}` : ''}</p>
                               {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
-                              {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
+                              {r.tags?.length ? <p className="next">{r.tags.map(tagLabel).join(' · ')}</p> : null}
                               {(r as CustomRecipe).custom && (
                                 <div>
                                   <button
@@ -518,16 +514,16 @@ export default function App() {
           <section className="surface list-scroll settings-section" aria-label={t('settings.title')}>
             <h2 className="settings-title">{t('settings.title')}</h2>
             <div className="settings-body">
-            <div className="setting-row"><span className="setting-label">{t('settings.language')}</span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.language')}</span></span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
               <button key={l} type="button" role="radio" aria-checked={lang === l} data-on={lang === l ? 'true' : 'false'} onClick={() => setLang(l)}>{l === 'es' ? 'ES' : 'EN'}</button>
             ))}</div></div>
-            <div className="setting-row setting-row-theme"><span className="setting-label">{t('settings.theme')}<small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
+            <div className="setting-row setting-row-theme"><span className="setting-label"><span className="setting-label-title">{t('settings.theme')}</span><small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
               <button key={m} type="button" role="radio" aria-checked={themeMode === m} data-on={themeMode === m ? 'true' : 'false'} onClick={() => setThemeMode(m)}>{m === 'light' ? t('settings.light') : m === 'dark' ? t('settings.dark') : t('settings.auto')}</button>
             ))}</div><small className="theme-current">{t('settings.themeCurrent')}: {themeMode === 'light' ? t('settings.light') : themeMode === 'dark' ? t('settings.dark') : `${t('settings.auto')} · ${resolvedTheme === 'dark' ? t('settings.dark') : t('settings.light')}`}</small></div></div>
-            <div className="setting-row"><span className="setting-label">{t('settings.advanced')}<small>{t('settings.advancedDesc')}</small></span><div className="segmented" role="radiogroup" aria-label={t('settings.advanced')}>{['On', 'Off'].map(v => (
-              <button key={v} type="button" role="radio" aria-checked={advanced === (v === 'On')} data-on={advanced === (v === 'On') ? 'true' : 'false'} onClick={() => setAdvanced(v === 'On')}>{v}</button>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.advanced')}</span><small>{t('settings.advancedDesc')}</small></span><div className="segmented segmented-advanced" role="radiogroup" aria-label={t('settings.advanced')}>{[true, false].map(v => (
+              <button key={String(v)} type="button" role="radio" aria-checked={advanced === v} data-on={advanced === v ? 'true' : 'false'} onClick={() => setAdvanced(v)}>{v ? t('common.on') : t('common.off')}</button>
             ))}</div></div>
-            <div className="setting-row"><span className="setting-label">{t('settings.equipment')}<small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.equipment')}</span><small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary btn-equip" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
             <EquipmentModal
               open={equipOpen}
               methods={cat.methods}
@@ -537,10 +533,12 @@ export default function App() {
               t={t}
               returnFocusRef={equipBtnRef}
             />
-            <div className="setting-row"><span className="setting-label">{t('settings.version')}</span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
-              <div className="setting-row"><span className="setting-label">{t('settings.update')}<small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.update')}</button></div>
-              <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
-              <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.update')}</span><small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.updateCta')}</button></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.github')}</span><small>{t('settings.githubDesc')}</small></span><a className="github-link" data-testid="settings-github" href={CONFIG.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={t('settings.githubOpen')} title={t('settings.githubOpen')}><GitHubIcon /></a></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.feedback')}</span><small>{t('settings.feedbackDesc')}</small></span><a className="btn-secondary btn-feedback" data-testid="settings-feedback" href={CONFIG.issuesUrl} target="_blank" rel="noopener noreferrer">{t('settings.feedbackCta')}</a></div>
+            <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
+            <div className="setting-row setting-row-version" data-testid="version-row"><span className="setting-label"><span className="setting-label-title">{t('settings.version')}</span></span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
+            <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
             </div>
           </section>
         )}

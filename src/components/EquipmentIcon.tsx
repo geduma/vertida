@@ -3,7 +3,7 @@ export const SUPPORTED_ICON_IDS = [
   'v60',
   'chemex',
   'aeropress',
-  'prensa',
+  'french-press',
   'kalita',
   'siphon',
   'clever',
@@ -116,7 +116,7 @@ export default function EquipmentIcon({ id, size = 40 }: { id: string; size?: nu
       </svg>
     );
   }
-  // Fallback (and prensa-francesa): french press
+  // Fallback (and french-press): french press
   return (
     <svg {...common}>
       <path d="M6 4h9v13.5a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 17.5V4Z" />
