@@ -1,94 +1,154 @@
 # AGENTS.md — Vertida
 
-> Operational guide for AI agents working in this repo. Product truth lives in `docs/PRD.md`. Stack truth lives in `package.json` + `src/config.ts`. Never invent product names, copy, or decisions — ask or verify.
+> Operational guide for AI agents working in this repo. Product truth lives in `docs/PRD.md`; stack truth lives in `package.json`, `src/config.ts` and the data files. Never invent product names, copy, recipes, limits or decisions — verify in the tree or ask.
 
 ## 1. What this repo is
 
-- **Vertida · coffee recipes and timer.** 100% client-side web: Vite + React 18 + TS + IndexedDB + PWA. Bilingual `es/en`, gram unit.
+- **Vertida · coffee recipes and timer.** 100% client-side web app: Vite 5 + React 18 + TypeScript 5 + IndexedDB + PWA.
 - Private package `vertida@2.0.0`, `"type": "module"`.
-- Config: `src/config.ts` (`appName Vertida`, `locales [es,en]` default `es`, `unit g`, `gramsPerCup 210`, `coffeeDefaultG 15`, `retentionGramsPerGram 2`, `equipment [v60, chemex, aeropress, prensa-francesa]`). No auth keys (`apiBaseUrl`, `appId`, `redirectUrl`, `sessionMaxDays` removed).
-- Auth: none. MVP is local-only; no login, no providers, no session.
-- Privacy: only local `email/display/provider`, 30d. No `rawData`/`salt`. Colombian Law 1581 notice **pending with lawyer** — do not claim compliance.
+- Bilingual `es` (default) / `en`, grams only. All UI copy is in `src/i18n/es.json` and `en.json`.
+- **No auth, no backend, no network calls.** No `apiBaseUrl`, `appId`, session or cloud sync. Everything is local to the device.
+- Privacy: local storage only. The Colombian Law 1581 notice is **pending legal review** — do not claim compliance.
+- Config (`src/config.ts`): `appName Vertida`, `locales [es,en]`, `defaultLocale es`, `unit g`, `ratioMin 10`, `ratioMax 20`, `ratioDefault 16`, `coffeeMaxG 500`, `waterMaxG 5000`, `cupsMax 10`, `gramsPerCup 210`, `coffeeDefaultG 15`, `retentionGramsPerGram 2`, `creditUrl https://geduma.com`, and the default `equipment` list (must mirror `methods.json` ids in `order`).
 
-## 2. Quickstart (verified with node 22.23.3)
+## 2. Quickstart
+
+Verified with Node 22.
 
 ```bash
-export PATH="$HOME/.nvm/versions/node/v22.23.3/bin:$PATH"
-npm i
-npm test               # see CHANGELOG latest: 47/47 at 013 (README 17/17 is stale)
+npm install
+npm test               # vitest run — 15 files / 142 tests
 npm run dev            # http://localhost:5173
-npm run build          # dist/ ~238KB JS + tsc -b
+npm run build          # tsc -b && vite build
+npm run preview        # serve dist/
 ```
 
-Scripts: `dev: vite`, `build: tsc -b && vite build`, `preview: vite preview`, `test: vitest run`.
+Scripts are exactly: `dev`, `build`, `preview`, `test`. There is **no** `validate:data` or `gen:icons` script, and no `manifest.json` / per-recipe files.
 
 ## 3. Repo map
 
 ```
 src/
-  App.tsx                 # tabs home/brew/recipes/settings; brew is a destination, not a tab (originTab pattern)
-  config.ts               # global limits + defaults (see §1)
+  App.tsx                 # screens, brew flow (summary→preview→running→done), navigation, settings
+  config.ts               # global limits + defaults + credit URL
   main.tsx
-  components/             # Toggle, EquipmentModal, EquipmentIcon, RecipeCreateModal, DiscoveryModal
-  lib/                    # loadData, calc (calcCoffee/cupsToWater/isRatioWarn), useTimer, db (idb),
-                          # customRecipes, favorites, useAppUpdate (manual PWA update flow). No auth module (removed).
-  data/                   # methods.json, recipes/*.json (4), discovery/*.json (3), manifest.json, version.json
-  i18n/es.json, en.json   # ALL UI copy lives here, keyed (t(k) falls back es → key)
-  theme/tokens.ts, app.css # premium slate tokens, light/dark via [data-theme], Liquid Glass island/sidebar
-tests/                    # vitest: calc, settings, stable-005, centered-cards-006, stability-011, desktop-012, discover-013…
-vite.config.ts            # VitePWA autoUpdate; manifest Vertida / #3b2316 / icon-192.png;
-                          # workbox CacheFirst only for /src/data/
+  components/
+    Landing.tsx           # welcome screen before the app shell
+    EquipmentModal.tsx    # equipment checkboxes + footer count/Save
+    EquipmentIcon.tsx     # SVG per method; SUPPORTED_ICON_IDS is the icon contract
+    RecipeCreateModal.tsx # homemade recipe form
+    DiscoveryModal.tsx    # atypical recipe modal (close/shuffle/prepare)
+    UpdateDoneModal.tsx   # “up to date” confirmation
+  lib/
+    calc.ts               # calcWater/calcCoffee, methodCupG, cupSizeG, isRatioWarn, validate*
+    schemas.ts            # Zod: PhaseType, PhaseSchema, MethodSchema, RecipeSchema
+    loadData.ts           # parses the three data files with Zod
+    db.ts                 # IndexedDB `vertida` v1: equipment + settings stores, persistStorage
+    prefs.ts              # guarded localStorage helpers (lang/theme/advanced/mute)
+    customRecipes.ts      # homemade recipes + legacy Spanish-field migration
+    favorites.ts          # favorites in localStorage
+    legacyIds.ts          # pre-v2 method-id mapping (prensa-francesa → french-press)
+    useTimer.ts           # phase timer hook (rAF grid, background/WakeLock aware)
+    useAppUpdate.ts       # manual PWA update flow
+  data/
+    methods.json          # 9 methods, versioned aggregate
+    recipes.json          # 40 classic recipes
+    discovery.json        # 18 atypical recipes (each with storyKey)
+  i18n/es.json, en.json   # identical key sets; placeholders must match
+  theme/app.css           # tokens, light/dark/auto, mobile + desktop, scroll containers
+tests/                    # 15 files / 142 tests
+docs/features/001-pwa-update-ux/  # update-flow spec/plan/tasks (gitignored features dir)
+.github/workflows/azure-static-web-apps-ashy-desert-012092510.yml
 ```
 
-Data contract (`src/data/`):
+## 4. Data contract
 
-- `methods.json` (4): `v60` (4 tazas / 1000g / 60g, `grind.media`), `chemex` (6 / 1500 / 90, `grind.media-gruesa`), `aeropress` (1 / 250 / 22, `grind.fina-media`), `prensa-francesa` (4 / 1000 / 60, `grind.gruesa`). Fields: `id, nombreKey, descripcionKey, icono, moliendaKey, orden, limites{tazasMax, aguaMaxG, cafeMaxG}`.
-- `manifest.json`: `{ methods[4], recipes[4: v60-clasica, chemex-clasica, aeropress-clasica, prensa-clasica], discovery[3: v60-tonica, aeropress-invertido-frio, chemex-cascara], version: 1 }`.
-- Recipe/discovery JSON: `id, methodId, ratio, cafeDefaultG, fases[{instruccionKey, aguaAcumuladaG, duracionS, tipo}]`, plus `dificultad/tags` optional. Field names are a **versioned contract — never rename**.
+Three aggregated, versioned files: `{ "version": 1, "methods": [...] }` and `{ "version": 1, "recipes": [...] }`. Zod parses them in `src/lib/loadData.ts`; a schema break must fail `npm test`.
 
-## 4. Non-negotiable conventions
+- **Method:** `id, nameKey, descriptionKey, icon, grindKey, order, limits?{cupsMax, waterMaxG, coffeeMaxG?, ratioMin?, ratioMax?}, parameters?{temperatureC?, totalTimeS?}`
+- **Recipe:** `id, methodId, category( classic | atypical ), nameKey, ratio, coffeeDefaultG, origin, difficulty?, tags?, storyKey?, phases[], version`
+  - `difficulty` values: `easy | medium | advanced` (translated by `difficultyLabel`).
+  - `tags` and `origin` are raw data strings, currently shown untranslated.
+- **Phase:** `type( bloom | pour | wait | stir | manual | done ), waterAccumulatedG, durationS, instructionKey`
+  - Water must be non-decreasing; the last phase is `done` with `durationS: 0`.
+  - Every `instructionKey`, `nameKey`, `descriptionKey` and `storyKey` must exist in **both** dictionaries.
+- **Never rename data fields.** They are a versioned contract. If method ids change, add a migration in `src/lib/legacyIds.ts` (used by equipment hydration and custom recipes).
+- Current methods (in `order`): `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever-dripper, espresso, moka`.
 
-1. **Code and comments in English. Copy via `src/i18n/*.json`. Data field names stay as-is.** Never hardcode UI Spanish/English in `.tsx`; add keys to both `es.json` + `en.json`.
-2. **Dose is water-only.** Inputs `waterG: number|''` + `ratio: number|''`; coffee is always derived `calcCoffee(water, ratio)`. `1 taza = 210 g` (`CONFIG.gramsPerCup`). Empty input shows `''`, `onBlur` clamps; derived never 0. Clamp to **method limits** (`limites`), not global `CONFIG` alone; `min===max` → `disabled` input.
-3. **Brew flow is 4 screens:** `summary (hero + controls)` → `preview (phase list)` → `running (ring + 64pt + phase dots + pause-CTA + 2×2 Skip/Mute/Reset/Cancel)` → `done`. Timer resets per recipe; guard `fases[idx]`. Retention display (`coffee * 2g/g`) is reference-only behind Advanced toggle.
-4. **Navigation:** tabbar `Inicio|Recetas|Ajustes` (`role=tablist`, `key={lang}` so island re-renders on language switch). Brew hides island in `running`. `back-link` (`‹ + destino`) in summary + preview + running. No `Descubrir` tab — discovery is a random modal from home (`Cerrar/Otra/Preparar`, ESC/backdrop, stable focus, re-roll without repeating).
-5. **Recipes list:** grouped by method (`orden` + header with count), sorted by display name per `lang`; `Todas|Favoritas` segmented (`role=radiogroup`); card is `role=button` (Enter/Space brews); custom `Delete` uses `stopPropagation`. Favorites in `localStorage` (`lib/favorites.ts`); customs in `localStorage` (`lib/customRecipes.ts`).
-6. **Theme:** `vertida-theme-mode` `light|dark|auto` (+ legacy `vertida-theme`), `document.documentElement.dataset.theme`, follows OS live via `matchMedia`. Mobile: floating Liquid Glass pill (single glass layer, no scrim). Desktop `≥1024px`: floating sidebar (nav inside `.app` grid col 1, content col 2). Compact buttons (`--btn-radius 12px`, heights 52/48/40); modals have footer actions on one line (`.form-actions{nowrap}`); no `modal-close` X — footer `Save/Cancel` only.
-7. **Security:** no `innerHTML`/`dangerouslySetInnerHTML`, no secrets in repo, https-only, validated inputs (zod), React escaping. `npm audit fix --force` is **postponed** (Vite 8 breaking) — do not run unasked.
-8. **Docs live with code.** CHANGELOG entries are human-grouped (`Added/Changed/Fixed/Verified`), latest-first. One fact per bullet with file paths. `Verified:` line must be actually run (`build`, `test`).
+## 5. Non-negotiable conventions
 
-## 5. How to do common tasks
+1. **Code and comments in English. UI copy via `src/i18n/*.json`.** Never hardcode Spanish/English in `.tsx`; add keys to both dictionaries. Tests use `tEs(key)`, not literals.
+2. **Water-first dosing.** Coffee is derived (`water / ratio`). One cup is `cupSizeG(recipeBase, limits) = min(recipe base water, waterMaxG ÷ cupsMax)`. Clamp dose/water/ratio to the active method limits, with `CONFIG` fallbacks. `cupsMax === 1` disables the slider.
+3. **Brew flow is 4 screens:** summary → preview → running → done. The tab bar is hidden while running. Timer resets per recipe; guard phase indexes. Retention is reference-only behind Advanced.
+4. **Navigation:** tabs `Home | Recipes | Settings` (`role=tablist`). Brew is a destination. No Discover tab — discovery is a modal from Home. Back links return to the origin tab.
+5. **Recipes:** grouped by method order, sorted by localized display name; `All | Favorites`; card is a keyboard-operable `role=button`; delete/favorite buttons stop propagation. Homemade recipes live only in `localStorage`.
+6. **Theme:** `PREF_KEYS.themeMode` (`light|dark|auto`) plus legacy `vertida-theme`; apply via `document.documentElement.dataset.theme`; Auto follows `matchMedia` live. Mobile: floating glass pill; desktop (`≥1024px`): floating sidebar grid.
+7. **Settings:** language and theme are segmented radiogroups; Advanced is `On | Off` segmented; equipment is a modal with footer count + Save; version comes from `__APP_VERSION__` (`package.json`); update row is wired to `useAppUpdate`; credits link uses `CONFIG.creditUrl`.
+8. **Persistence:** `localStorage` for language/theme/advanced/mute/favorites/custom recipes; IndexedDB `vertida` v1 (`equipment` + `settings`) for equipment. Hydrate equipment **before** persisting; `loadEquipmentIds()` returning `null` means “keep defaults”, `[]` means “nothing selected”. All storage access is guarded.
+9. **Scrolling is scoped.** The page never scrolls: `html,body{height:100%;overflow:hidden}` and `.app` is viewport-bounded. Only `.list-scroll`, `.home-scroll` and `.brew-scroll` scroll. Any new overflowing list must use one of these containers.
+10. **Security:** no `innerHTML`/`dangerouslySetInnerHTML`/`document.write`, no secrets, https-only links, Zod validation, React escaping. `npm audit fix --force` is postponed (breaking Vite major) — do not run it unasked.
+11. **Docs live with code.** CHANGELOG entries are latest-first and grouped `Added/Changed/Fixed/Verified`; the `Verified:` line must be actually run.
 
-**Add an official recipe (data change):**
+## 6. Common tasks
 
-1. Add `src/data/recipes/<id>.json` (zod-valid phases, `methodId` must exist).
-2. Append id to `manifest.json → recipes`.
-3. Add display/instruction keys to **both** `src/i18n/es.json` and `en.json`.
-4. Run `npm test` + `npm run build`.
+**Add a classic recipe**
 
-**Custom (homemade) recipe:** UI-only via `+ New recipe` button → `RecipeCreateModal` → `createCustomRecipe()` → `localStorage`. Never touch `data/`. Enforce method caps (`cafeMaxG`, `aguaMaxG`, `tazasMax` via `gramsPerCup`) with `method.limitHint`; on zod failure return `error.coffee-range`.
+1. Append a recipe object to `src/data/recipes.json` (`category: "classic"`, valid phases, existing `methodId`).
+2. Add `recipe.<id>.name` to both `src/i18n/es.json` and `en.json`.
+3. Run `npm test && npm run build`.
 
-**Calculator/limits:** `waterGN = clamp(waterG, 1, aguaMaxG)`, `ratioN = clamp(ratio, ratioMin, ratioMax)` from `method.limites` (fallback `1–50/16`); `coffeeEff = calcCoffee(water, ratio)`; warn via `isRatioWarn(ratioN)`; hint via `method.limitHint {tazas} {agua} {metodo}`.
+**Add a discovery recipe**
 
-**Settings:** language segmented `ES/EN` (`role=radio`, `aria-checked`); theme segmented `Light/Dark/Auto` + `Current: X` sub-label; Advanced `role=switch` Toggle; equipment via modal (footer counter + Save, min 2-col grid, per-method SVG); version row (`v{__APP_VERSION__}` via vite `define`, `tests/update-credits.test.tsx`); update row wired to `lib/useAppUpdate` (check → apply/reload, feedback `<small aria-live="polite">`); credits row + Landing credit link to `CONFIG.creditUrl`; local-only notice row (no accounts, no session). Language (`vertida-lang`), theme (`vertida-theme-mode`), Advanced (`vertida-advanced`) and mute (`vertida-muted`) persist via `lib/prefs.ts`; equipment is hydrated from IndexedDB **before** the first write (`lib/db.ts`, `loadEquipmentIds`/`saveEquipmentIds`).
+1. Append to `src/data/discovery.json` with `category: "atypical"` and a `storyKey`.
+2. Add `recipe.<id>.name` and `recipe.<id>.story` to both dictionaries.
+3. Run the gates.
 
-**Scroll (feature 001):** the page never scrolls (`html,body{overflow:hidden}`, `.app` height-bounded). Only `.list-scroll` containers scroll (home wrapped region, recipes list, settings list, brew preview); heroes/headers and the tabbar stay fixed. New overflowing list ⇒ add `.list-scroll`, don't scroll the page.
+**Add or rename a method**
 
-## 8. Quality gates (run before claiming done)
+1. Edit `src/data/methods.json` (keep `order` sequential).
+2. Add `method.<id>.name` / `.desc` and the `grind.*` key to both dictionaries.
+3. Add the icon id to `SUPPORTED_ICON_IDS` and draw it in `EquipmentIcon` (or reuse an existing shape intentionally).
+4. Mirror the id in `CONFIG.equipment` in the same order.
+5. Add a legacy mapping in `src/lib/legacyIds.ts` if an old id was stored on devices.
+6. Run the gates; `tests/catalog.test.ts` enforces order, icons and limits.
+
+**Homemade recipe**
+
+UI-only: `RecipeCreateModal` → `createCustomRecipe()` → `localStorage`. Never touch `src/data/`. Template phases come from `buildDefaultPhases()`; legacy Spanish-field/`prensa-francesa` records are normalized on read.
+
+**Calculator / limits**
+
+`waterGN = clamp(cups × cupG, 1, waterMaxG)`; `ratioN = clamp(ratio, ratioMin, ratioMax)`; `coffeeEff = calcCoffee(water, ratio)`; warn with `isRatioWarn(ratioN, ratioMin, ratioMax)`; hint with `method.limitHint {tazas} {agua} {metodo}`. Phase water is scaled by `waterGN / recipeBaseWater`.
+
+**Settings / persistence**
+
+Use `readPref`/`writePref`/`readFlag`/`writeFlag` from `src/lib/prefs.ts` (never raw `localStorage` for preferences). Equipment goes through `loadEquipmentIds`/`saveEquipmentIds` in `src/lib/db.ts`. Language switch must re-render the tab bar (`key={lang}`).
+
+**Tests**
+
+Add behavior tests under `tests/` using `tests/helpers.tsx` (`renderApp`, `tEs`, `dEn`, `flush`) and mock the DB seam (`loadEquipmentIds`, `saveEquipmentIds`, `persistStorage`). Derive expectations from data/i18n instead of hardcoding copy. Use fake timers for the timer. Intentional updates to existing tests must be explained in the CHANGELOG.
+
+## 7. Quality gates
 
 ```bash
 npm test && npm run build
 ```
 
-- New behavior needs a test in `tests/` (follow `discover-013` / `desktop-012` pattern: `data-testid` + stable strings, intentional updates to old tests documented in CHANGELOG).
-- PWA: do not expand `workbox.runtimeCaching` beyond `/src/data/` without a decision record.
-- Wide doc rewrites (many files / published pages) need explicit user approval first.
+- New behavior needs a test; every data/i18n key referenced by data must exist in both languages (`tests/i18n.test.ts`).
+- `tests/catalog.test.ts` guards method order, icon support, limits and monotonic phase water.
+- `tests/update-credits.test.tsx` guards the scoped-scroll contract.
+- Do not expand Workbox runtime caching beyond `/src/data/` without a decision record.
+- Wide doc rewrites need explicit user approval first.
 
-## 7. Never do
+## 8. Never do
 
-- Rename data/DB fields; invent copy, methods, recipes, limits, or `appId`; claim Law 1581 compliance; add network calls outside `apiBaseUrl`; store anything beyond local device storage; add `sec-audit` or `commit/push/PR` unasked.
+- Rename data or IndexedDB fields; invent copy, methods, recipes or limits.
+- Store anything beyond local device storage, or add network calls/auth.
+- Claim Law 1581 compliance.
+- Run `sec-audit`, `git commit`, `git push` or open a PR unless explicitly asked.
+- Delete or rewrite another session’s uncommitted work without confirming it is stopped.
 
 ## References
 
 - Product: `docs/PRD.md` · History: `CHANGELOG.md` · Entry: `README.md`
-- Historical spec (not in tree): `docs/features/001-vertida-mvp/spec.md`
+- Local (gitignored) feature notes: `docs/features/001-pwa-update-ux/`

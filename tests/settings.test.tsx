@@ -59,13 +59,13 @@ describe('advanced mode', () => {
   it('enabling it reveals the retention reference in the brew summary', () => {
     renderApp();
     goSettings();
-    fireEvent.click(screen.getByRole('radio', { name: 'On' }));
-    expect(screen.getByRole('radio', { name: 'On' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: tEs('common.on') }));
+    expect(screen.getByRole('radio', { name: tEs('common.on') }).getAttribute('aria-checked')).toBe('true');
 
     fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
-    fireEvent.click(screen.getByRole('button', { name: `${tEs('brew.prepare')}: ${tEs('recipe.v60-clasica.name')}` }));
+    fireEvent.click(screen.getByRole('button', { name: `${tEs('brew.prepare')}: ${tEs('recipe.v60-balanced.name')}` }));
     // Retention reference = derived dose for 1 cup × g/g, with the cup taken from the method limits
-    const v60 = recipesData.find(r => r.id === 'v60-clasica')!;
+    const v60 = recipesData.find(r => r.id === 'v60-balanced')!;
     const v60Limits = methodsData.find(m => m.id === 'v60')!.limits!;
     const cup = Math.min(Math.max(...v60.phases.map(p => p.waterAccumulatedG)), v60Limits.waterMaxG / v60Limits.cupsMax);
     const retention = (calcCoffee(cup, v60.ratio) * CONFIG.retentionGramsPerGram).toFixed(0);
@@ -83,8 +83,19 @@ describe('equipment', () => {
     expect(screen.getByText(`1/${methodsData.length}`)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
-    expect(screen.getByText(tEs('recipe.v60-clasica.name'))).toBeTruthy();
-    expect(screen.queryByText(tEs('recipe.chemex-clasica.name'))).toBeNull();
+    expect(screen.getByText(tEs('recipe.v60-balanced.name'))).toBeTruthy();
+    expect(screen.queryByText(tEs('recipe.chemex-balanced-16.name'))).toBeNull();
+  });
+
+  it('upgrades legacy equipment ids saved by older builds', async () => {
+    loadEquipmentIds.mockResolvedValueOnce(['v60', 'prensa-francesa']);
+    renderApp();
+    await flush();
+
+    fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
+    expect(screen.getByText(tEs('recipe.v60-balanced.name'))).toBeTruthy();
+    expect(screen.getByText(tEs('recipe.french-press-light-17.name'))).toBeTruthy();
+    expect(screen.queryByText(tEs('recipe.chemex-balanced-16.name'))).toBeNull();
   });
 
   it('toggling updates the counter, persists via the IndexedDB seam and filters the app', async () => {
@@ -115,8 +126,8 @@ describe('equipment', () => {
 
     // Recipes tab hides the deselected method
     fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
-    expect(screen.queryByText(tEs('recipe.chemex-clasica.name'))).toBeNull();
-    expect(screen.getByText(tEs('recipe.v60-clasica.name'))).toBeTruthy();
+    expect(screen.queryByText(tEs('recipe.chemex-balanced-16.name'))).toBeNull();
+    expect(screen.getByText(tEs('recipe.v60-balanced.name'))).toBeTruthy();
   });
 
   it('deselecting everything shows the empty states and a shortcut back to equipment', () => {

@@ -89,7 +89,7 @@ describe('methods data', () => {
       expect(svg, `${m.id} icon`).toContain('<svg');
       expect((svg.match(/<(path|circle|rect)/g) ?? []).length, `${m.id} icon shapes`).toBeGreaterThanOrEqual(3);
       // Anything other than the french press (the fallback shape) must be drawn on its own
-      if (m.icon !== 'prensa') expect(svg, `${m.id} icon is not the fallback`).not.toBe(fallback);
+      if (m.icon !== 'french-press') expect(svg, `${m.id} icon is not the fallback`).not.toBe(fallback);
     }
   });
 });

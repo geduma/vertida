@@ -19,7 +19,7 @@ export const CONFIG = {
     'v60',
     'chemex',
     'aeropress',
-    'prensa-francesa',
+    'french-press',
     'kalita-wave',
     'siphon',
     'clever-dripper',

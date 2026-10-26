@@ -8,8 +8,8 @@ vi.mock('../src/lib/db', () => ({
   persistStorage: async () => false,
 }));
 
-const v60 = recipesData.find(r => r.id === 'v60-clasica')!;
-const chemex = recipesData.find(r => r.id === 'chemex-clasica')!;
+const v60 = recipesData.find(r => r.id === 'v60-balanced')!;
+const chemex = recipesData.find(r => r.id === 'chemex-balanced-16')!;
 const v60Name = tEs(v60.nameKey);
 const chemexName = tEs(chemex.nameKey);
 

@@ -38,13 +38,13 @@ describe('local preferences', () => {
   it('restores advanced mode after a remount', () => {
     const first = renderApp();
     goSettings();
-    fireEvent.click(screen.getByRole('radio', { name: 'On' }));
+    fireEvent.click(screen.getByRole('radio', { name: tEs('common.on') }));
     expect(localStorage.getItem(PREF_KEYS.advanced)).toBe('1');
     first.unmount();
 
     renderApp();
     goSettings();
-    expect(screen.getByRole('radio', { name: 'On' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: tEs('common.on') }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('restores the equipment selection only once, without clobbering it with defaults', async () => {

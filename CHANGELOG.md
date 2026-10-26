@@ -1,5 +1,29 @@
 # Changelog
 
+## [Unreleased] — 029 catálogo ampliado, i18n completo y scroll real
+### Added
+- `src/data/recipes.json`: catálogo clásico ampliado de 18 a **40 recetas** (3–6 por método), con ids en inglés (`v60-balanced`, `chemex-three-pours`, `french-press-light-17`, `moka-partners-12`…), `difficulty` normalizada a `easy|medium|advanced` y `tags` en inglés.
+- `src/data/discovery.json`: **18 descubrimientos** atípicos (antes 9), todos con `storyKey`; nuevas claves de instrucción `phase.bypass`, `phase.ice` y `phase.preinfusion` (los tipos de fase del esquema no cambian).
+- `src/lib/legacyIds.ts`: mapa `prensa-francesa → french-press` para equipos guardados en IndexedDB y recetas propias antiguas; se aplica al hidratar equipos (`src/App.tsx`) y al normalizar recetas (`src/lib/customRecipes.ts`).
+- `tests/custom-recipes.test.ts`: cobertura del mapa de ids legacy; `tests/settings.test.tsx`: un equipo guardado con id antiguo se migra en vez de perderse.
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `recipe.meta`, `recipe.minutes`, `brew.summaryMeta`, `brew.phaseProgress`, `phase.manual`, `phase.bypass`, `phase.ice`, `phase.preinfusion`, `common.on`, `common.off`, `timer.muteOn`, `timer.muteOff`, `difficulty.easy|medium|advanced`, `method.french-press.*`, `grind.*` en inglés y los nombres/historias del catálogo nuevo (220 claves por idioma, paridad exacta).
+### Changed
+- `src/data/methods.json`: ids/iconos de método en inglés (`french-press`), `grindKey` normalizadas (`grind.medium`, `grind.medium-coarse`, `grind.medium-fine`, `grind.coarse`, `grind.fine`); límites actualizados (v60 3 tazas/510 g, prensa 5/1000, etc.).
+- `src/App.tsx`, `src/components/DiscoveryModal.tsx`: metadatos de receta, resumen, progreso `fase i/n`, etiqueta `manual`, mute y `On/Off` ahora salen de i18n; `difficultyLabel()` traduce la dificultad y elimina tildes del slug.
+- `src/components/EquipmentIcon.tsx`: `SUPPORTED_ICON_IDS` usa `french-press` (la forma dibujada no cambia); `src/config.ts` alinea `CONFIG.equipment` con `methods.json`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: reescritos sobre el árbol real (9 métodos, 40+18 recetas, persistencia, scroll, scripts reales, sin `manifest.json` ni `validate:data`).
+### Fixed
+- Scroll acotado real: `src/theme/app.css` añade `html,body{height:100%;overflow:hidden}`, `.app` con `100dvh` + `overflow:hidden`, y las regiones `.list-scroll`, `.home-scroll`, `.brew-scroll`; el test `tests/update-credits.test.tsx` vuelve a pasar.
+- `src/data/methods.json`: el tope de agua de v60 sube a 510 g para cubrir la receta `v60-hoffmann-30` (30 g × 16.67 = 500.1 g) sin romper el contrato de límites.
+- `tests/`: referencias a ids retirados actualizadas (`v60-balanced`, `aeropress-classic-15`, `chemex-balanced-16`), ratios esperados derivados de datos y textos de mute/fase/progreso vía i18n; ya no quedan literales `'On'`.
+### Removed
+- Código y CSS muertos: `src/components/Brand.tsx`, `src/components/Toggle.tsx`, `src/theme/tokens.ts`, `renderCard`/`cards` en `src/App.tsx`, variables `lim`/`wmax` sin uso y reglas `.toggle`/`.switch-field`/`.switch-state` (incluido forced-colors).
+- Claves i18n sin uso (recetas del catálogo anterior, `method.prensa.*`, `phase.flip`, `phase.tonic`, `calc.water`, `timer.mute`, etc.).
+### Verified
+- `npm test` **142/142 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **300.94 kB JS (80.86 kB gzip)**, **23.16 kB CSS**, 16 entradas de precache.
+### Notes
+- Cambio de contrato de datos: los ids de receta y el id de método `prensa-francesa` cambiaron. Los favoritos guardados con ids viejos dejan de coincidir (no hay mapeo posible receta a receta); equipos y recetas propias sí se migran.
+
 ## [Unreleased] — 028 persistencia local: IndexedDB, preferencias y recetas propias
 ### Fixed
 - `src/lib/db.ts`: la selección de equipos se **lee** de IndexedDB al arrancar (`loadEquipmentIds`) y se guarda de forma atómica (`saveEquipmentIds`, stores `equipment` + `settings`, admite selección vacía); `db()` ya no lanza de forma síncrona cuando IndexedDB no está disponible.
@@ -26,6 +50,9 @@
 - `src/config.ts`: constante `creditUrl` (la URL del crédito nunca va inline en componentes).
 ### Verified
 - `npm test` 133/133, `npm run build` limpio (tsc + Vite/PWA, 16 entradas de precache).
+
+### Corrección (029)
+- La afirmación de scroll de esta entrada no estaba en el árbol: `src/theme/app.css` nunca incluyó `html,body{height:100%;overflow:hidden}` ni `.list-scroll`, por lo que el contrato de `tests/update-credits.test.tsx` fallaba desde `dc846ba`. Se implementó de verdad en 029.
 
 ## [Unreleased] — 026 reescritura completa de la suite de tests
 ### Added

@@ -9,8 +9,8 @@ vi.mock('../src/lib/db', () => ({
   persistStorage: async () => false,
 }));
 
-const v60 = recipesData.find(r => r.id === 'v60-clasica')!;
-const aero = recipesData.find(r => r.id === 'aeropress-clasica')!;
+const v60 = recipesData.find(r => r.id === 'v60-balanced')!;
+const aero = recipesData.find(r => r.id === 'aeropress-classic-15')!;
 const v60Name = tEs(v60.nameKey);
 const aeroName = tEs(aero.nameKey);
 
@@ -93,15 +93,15 @@ describe('brew summary (dose is water-derived)', () => {
     const minus = screen.getByRole('button', { name: tEs('calc.ratioMinus') }) as HTMLButtonElement;
     const value = () => container.querySelector('.ratio-value')!.textContent;
 
-    expect(value()).toBe('16'); // recipe default
+    expect(value()).toBe(String(v60.ratio)); // recipe default
     for (let i = 0; i < 10; i++) fireEvent.click(plus); // way past the max
-    expect(value()).toBe('18'); // v60 ratioMax
+    expect(value()).toBe(String(limitsOf('v60').ratioMax)); // v60 ratioMax
     expect(plus.disabled).toBe(true);
     expect(screen.getByTestId('coffee-from-water').textContent)
-      .toBe(tEs('calc.coffeeFromWater').replace('{g}', String(calcCoffee(cup, 18))));
+      .toBe(tEs('calc.coffeeFromWater').replace('{g}', String(calcCoffee(cup, limitsOf('v60').ratioMax!))));
 
     for (let i = 0; i < 20; i++) fireEvent.click(minus); // way past the min
-    expect(value()).toBe('14'); // v60 ratioMin
+    expect(value()).toBe(String(limitsOf('v60').ratioMin)); // v60 ratioMin
     expect(minus.disabled).toBe(true);
   });
 
@@ -113,7 +113,7 @@ describe('brew summary (dose is water-derived)', () => {
 
   it('a method with its own ratio band (espresso) does not show the generic ratio warning', () => {
     const { container } = renderApp();
-    const espressoName = tEs(recipesData.find(r => r.id === 'espresso-clasica')!.nameKey);
+    const espressoName = tEs(recipesData.find(r => r.id === 'espresso-1-2-20')!.nameKey);
     brewCard(espressoName);
     // 1:2 sits inside the espresso band → the "outside this method range" copy must not render
     expect(screen.queryByText(tEs('calc.warn-ratio'))).toBeNull();
@@ -162,11 +162,11 @@ describe('brew running (timer)', () => {
     // skip advances to the next phase
     fireEvent.click(screen.getByRole('button', { name: tEs('timer.skip') }));
     expect(container.querySelector('h2.mega')!.textContent).toBe(`${scaledWater('v60', v60, v60.phases[1].waterAccumulatedG)} g`);
-    expect(screen.getByText(new RegExp(`phase 2/${v60.phases.length}`))).toBeTruthy();
+    expect(screen.getByText(new RegExp(tEs('brew.phaseProgress').replace('{i}', '2').replace('{n}', String(v60.phases.length))))).toBeTruthy();
 
     // mute toggles
-    fireEvent.click(screen.getByRole('button', { name: `${tEs('timer.mute')}: off` }));
-    expect(screen.getByRole('button', { name: `${tEs('timer.mute')}: on` })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: tEs('timer.muteOff') }));
+    expect(screen.getByRole('button', { name: tEs('timer.muteOn') })).toBeTruthy();
 
     // cancel returns to the summary and unmutes the island
     fireEvent.click(screen.getByRole('button', { name: tEs('timer.cancel') }));
@@ -185,7 +185,7 @@ describe('brew running (timer)', () => {
     // Phase durations come from the recipe: one act per phase transition (+0.5 s buffer).
     const d = v60.phases.map(p => p.durationS);
     const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-    const atPhase = (n: number) => new RegExp(`phase ${n}/${v60.phases.length}`);
+    const atPhase = (n: number) => new RegExp(tEs('brew.phaseProgress').replace('{i}', String(n)).replace('{n}', String(v60.phases.length)));
     act(() => { vi.advanceTimersByTime((d[0] + 0.5) * 1000); });
     expect(screen.getByText(atPhase(2))).toBeTruthy();
     act(() => { vi.advanceTimersByTime((d[1] + 0.5) * 1000); });

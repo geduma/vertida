@@ -1,4 +1,5 @@
 import { RecipeSchema, type PhaseType, type Recipe } from './schemas';
+import { mapLegacyMethodId } from './legacyIds';
 
 const KEY = 'vertida-custom-recipes';
 
@@ -35,7 +36,7 @@ function normalizeRecipe(r: Record<string, unknown>): Record<string, unknown> | 
   const category = r.category ?? r.categoria;
   return {
     id: r.id,
-    methodId: r.methodId,
+    methodId: typeof r.methodId === 'string' ? mapLegacyMethodId(r.methodId) : r.methodId,
     category: category === 'atypical' || category === 'atipica' ? 'atypical' : 'classic',
     nameKey: r.nameKey ?? r.nombreKey,
     ratio: r.ratio,

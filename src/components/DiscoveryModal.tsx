@@ -54,7 +54,7 @@ export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose
         </div>
         <div className="stack">
           <h3>{t(recipe.nameKey)}</h3>
-          <p className="hero-meta">1:{recipe.ratio} · {recipe.coffeeDefaultG}g · {recipe.phases.length} phases · ~{Math.max(1, Math.round(secs / 60))} min</p>
+          <p className="hero-meta">{t('recipe.meta').replace('{ratio}', String(recipe.ratio)).replace('{coffee}', String(recipe.coffeeDefaultG)).replace('{phases}', String(recipe.phases.length)).replace('{min}', String(Math.max(1, Math.round(secs / 60))))}</p>
           {recipe.storyKey && <p className="next">{t(recipe.storyKey)}</p>}
         </div>
         <div className="modal-foot form-actions">

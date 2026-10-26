@@ -7,6 +7,7 @@ import {
   saveCustomRecipes,
 } from '../src/lib/customRecipes';
 import { RecipeSchema } from '../src/lib/schemas';
+import { mapLegacyMethodId } from '../src/lib/legacyIds';
 
 const KEY = 'vertida-custom-recipes';
 
@@ -165,7 +166,14 @@ describe('recipeDisplayName', () => {
   });
 
   it('resolves official recipes through their i18n key', () => {
-    const official = { id: 'v60-clasica', nameKey: 'recipe.v60-clasica.name' } as never;
-    expect(recipeDisplayName(official, (k) => `T:${k}`)).toBe('T:recipe.v60-clasica.name');
+    const official = { id: 'v60-balanced', nameKey: 'recipe.v60-balanced.name' } as never;
+    expect(recipeDisplayName(official, (k) => `T:${k}`)).toBe('T:recipe.v60-balanced.name');
+  });
+});
+
+describe('legacy method ids', () => {
+  it('maps ids stored by the pre-v2 data contract', () => {
+    expect(mapLegacyMethodId('prensa-francesa')).toBe('french-press');
+    expect(mapLegacyMethodId('v60')).toBe('v60');
   });
 });

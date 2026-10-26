@@ -66,9 +66,9 @@ describe('cup size (method limits are the source of truth)', () => {
   });
 
   it('cupSizeG caps the method cup at the recipe reference water', () => {
-    // v60-clasica (240 g base) is scaled down to the method cup → 2 cups = 420 g, never clamped
+    // v60-equilibrada (300 g base) is scaled down to the method cup → 2 cups = 420 g, never clamped
     expect(cupSizeG(240, v60)).toBe(210);
-    // espresso-clasica (36 g base) keeps its dose: below the method cup
+    // espresso 1:2 (40 g base) keeps its dose: below the method cup
     expect(cupSizeG(36, espresso)).toBe(36);
     // aeropress recipe base 208 g stays under the 210 g method cup
     expect(cupSizeG(208, { waterMaxG: 210, cupsMax: 1 })).toBe(208);

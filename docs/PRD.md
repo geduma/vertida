@@ -1,68 +1,151 @@
 # PRD — Vertida · coffee recipes and timer
 
-- **Product:** Vertida · coffee recipes and timer. 100% client-side web (Vite + React TS + IndexedDB + PWA). Bilingual `es/en`, gram unit.
-- **Status:** v2.0.0 MVP + iterations 002–013 (see `CHANGELOG.md`). `appId` placeholder, Law 1581 notice pending with lawyer.
-- **Default locale:** `es`. Copy in `src/i18n/es.json` / `en.json`. Code and comments in English.
+- **Product:** Vertida · coffee recipes and timer. 100% client-side web app (Vite + React TS + IndexedDB + PWA).
+- **Status:** v2.0.0 with the 002–029 iteration set (see `CHANGELOG.md`). Local-only; no auth. Colombian Law 1581 notice still pending legal review.
+- **Locales:** Spanish (default) and English. All UI copy lives in `src/i18n/es.json` / `en.json`; code and comments are in English.
+- **Unit:** grams only.
 
 ## 1. Vision and users
 
-**Vision:** brew specialty coffee at home without friction: choose method → dose by water → follow the phase timer → repeat.
+**Vision:** brew specialty coffee at home without friction — choose a method, set the cups, follow the phases, repeat.
 
-**Users:** (a) home brewer with V60/Chemex/Aeropress/Press who wants a guided recipe; (b) curious user discovering atypical recipes; (c) advanced user creating homemade recipes and marking favorites. Primary use mobile in the kitchen; desktop as support.
+**Users:**
+
+1. Home brewer with V60, Chemex, AeroPress, French press, Kalita, siphon, Clever, espresso or moka who wants a guided recipe.
+2. Curious user looking for atypical brews through a low-commitment “discover” modal.
+3. Advanced user who saves homemade recipes, favorites, equipment and preferences on the device.
+
+Primary context is mobile in the kitchen; desktop is a supported second layout.
 
 ## 2. Scope (what the product does today)
 
-1. **Home (dashboard):** random suggested recipe favoring favorites (visible favorites pool, visible fallback), selected methods with caps, stats (recipes / methods n/total / max cups), CTAs to Recipes and Discover.
-2. **Prepare (brew, 4 screens):** `resumen (hero + controles)` → `vista previa (lista de fases)` → `en curso (anillo + 64pt + puntos de fase + pausa CTA + 2×2 Saltar/Silenciar/Reiniciar/Cancelar)` → `listo`. `back-link` (‹ + destination) always visible; island hidden in `running`.
-3. **Water-only calculator:** water (g) + ratio inputs; coffee always derived (`agua / ratio`); `1 taza = 210 g`; clamp to method limits; out-of-range ratio warning; retention (`café × 2 g/g`) reference-only after Advanced toggle.
-4. **Classic recipes (4):** `v60-clasica, chemex-clasica, aeropress-clasica, prensa-clasica`. Grouped by method (order + header with count), sorted by name per language. `Todas|Favoritas` filter with its own empty state. Selectable card (tap/Enter/Space → prepare); favorite with heart (`aria-pressed`, persists `localStorage`).
-5. **Discover (3 atypical):** `v60-tonica, aeropress-invertido-frio, chemex-cascara`. No own tab: random modal from Home (`Cerrar/Otra/Preparar`, re-roll without repeating, ESC/backdrop, stable focus).
-6. **Create homemade recipe:** `+ Nueva receta` button in Recipes → modal (method, name, ratio, base coffee, notes) → validates against method caps → saves to `localStorage` (without touching `data/`), brewable and deletable (v1: simple deletion).
-7. **Methods and equipment (4):** `v60, chemex, aeropress, prensa-francesa` with limits (`v60 4tz/1000g/60g · chemex 6/1500/90 · aeropress 1/250/22 · prensa 4/1000/60`) and suggested grind. Settings chooses equipment (2-col modal with SVG per method); Home and Recipes only show selected; empty state with CTA to Settings.
-8. **Settings:** language `ES/EN`, theme `Light/Dark/Auto` (follows OS live, persists), Advanced (`role=switch`), equipment, local-only notice (no accounts).
-9. **Timer:** per phase (`duracionS`, `aguaAcumuladaG`, `tipo manual/auto`), pause/resume, skip, mute, restart/cancel, `done` state → `listo` CTA. Background + WakeLock (per platform).
-10. **PWA + offline data:** `VitePWA autoUpdate`, manifest `Vertida / #3b2316 / icon-192.png`, `CacheFirst` only for `/src/data/`. 100% local-only: no session, no accounts, no cloud sync.
-11. **i18n + accessibility:** `t(k)` with `es → key` fallback; `tablist/radiogroup/switch/button` with `aria-selected/checked/pressed`; keyboard navigation in cards and modals; layout with no scroll-x <360px; desktop `≥1024px` with sidebar.
+### 2.1 Landing and shell
+
+- Welcome screen with brand, title, subtitle and CTA; the CTA reveals the app.
+- Three tabs — **Home · Recipes · Settings** — with `role=tablist`. Brewing is a destination reached from a recipe, not a tab.
+- Floating glass tab bar on mobile; floating sidebar in the desktop grid (`≥1024px`).
+- Mobile-first; reduced-motion and forced-colors styles included. Below 360 px, form actions scroll horizontally on purpose.
+
+### 2.2 Home
+
+- Suggested recipe (favoring favorites when present), method chips with limits, stats (recipes / selected methods / max cups), and CTAs to Recipes and Discover.
+- Discovery opens a modal with an atypical recipe for the selected equipment: close, shuffle (no immediate repeat) and prepare; Escape and backdrop close it; focus is stable.
+
+### 2.3 Brew flow (4 screens)
+
+`summary → preview → running → done`
+
+- **Summary:** recipe hero, cups slider, ratio stepper, derived coffee, method limit hint, optional retention reference behind Advanced.
+- **Preview:** every phase with scaled water and duration; back and start.
+- **Running:** progress ring, large water target, phase dots, current instruction and `phase i/n`, pause/resume, skip, mute, reset and cancel. The tab bar is hidden while running.
+- **Done:** completion state with repeat/back actions.
+- Timer is per recipe and phase (`durationS`); it resets when the recipe changes. WakeLock and background timing are used where the platform allows.
+
+### 2.4 Dosing calculator
+
+- Water is the primary input; **coffee is always derived** as `water / ratio`.
+- Cups slider: 1…`cupsMax` (disabled when the method has a single cup). One cup is `min(recipe reference water, waterMaxG ÷ cupsMax)`.
+- Ratio stepper: 0.5 steps clamped to the method's `ratioMin`/`ratioMax`; a warning appears only when the ratio is outside the active method band.
+- Dose, water and ratio are clamped to method limits; when a method defines none, cups/water fall back to `CONFIG` and the ratio to 1–50.
+- Advanced mode reveals approximate retention (`dose × 2 g/g`) as a reference value only.
+
+### 2.5 Recipes
+
+- **40 classic recipes** across 9 methods, grouped by method order and sorted by localized display name.
+- `All | Favorites` segmented filter with its own empty state; heart toggles are `aria-pressed` and persisted.
+- Cards are keyboard-operable (`Enter`/`Space`) and open the brew summary.
+- `+ New recipe` creates a homemade recipe (method, name, ratio, dose, notes) with five template phases; it is brewable and deletable and never touches the bundled data.
+
+### 2.6 Discover
+
+- **18 atypical recipes** for the selected equipment. No Discover tab; the modal is launched from Home.
+- Each atypical recipe carries a `storyKey`; the modal shows name, method, ratio/dose/phases/time and the story.
+
+### 2.7 Methods and equipment
+
+Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever-dripper, espresso, moka`.
+
+- Each method defines limits (cups, water, optional dose and ratio band), suggested grind and an SVG icon.
+- Settings opens an equipment modal (checkbox cards, footer count + Save). Selection is persisted atomically in IndexedDB and filters Home and Recipes.
+- Deselecting everything is valid and shows the empty states with a shortcut back to equipment.
+
+### 2.8 Settings
+
+- Language `ES | EN` (segmented radio).
+- Theme `Light | Dark | Auto`, applied instantly, following the OS live in Auto.
+- Advanced `On | Off` (retention reference).
+- Equipment modal with counter.
+- Version row (`v{__APP_VERSION__}` from `package.json`), manual update check with feedback, local-only notice and credits link.
+
+### 2.9 Persistence
+
+- `localStorage`: language, theme mode, advanced, mute, favorites and homemade recipes. All access is guarded against blocked/quota storage.
+- IndexedDB `vertida` v1: `equipment` + `settings` stores for the equipment selection (atomic save, empty selection supported); `recipes` store reserved. `navigator.storage.persist()` is requested on startup.
+- Pre-v2 custom recipes migrate from Spanish field names on read; legacy method ids are mapped rather than discarded.
+
+### 2.10 PWA, updates and offline
+
+- Installable manifest (`Vertida`, theme `#141414`, 192/512 any + maskable icons), precached shell and offline use.
+- `autoUpdate` service-worker registration plus a manual **Check for updates** action with `idle | checking | uptodate | failed | unavailable` states; when nothing new is found it shows an “up to date” confirmation modal.
+- Workbox runtime caching is scoped to `/src/data/` only.
+
+### 2.11 i18n and accessibility
+
+- `t(key)` with Spanish fallback to the key; dictionaries must have identical keys and placeholders (tested).
+- All UI copy goes through i18n; data display keys are validated by tests.
+- Semantic tablist, radiogroups, dialogs, checkboxes and buttons; focus management in modals; visible focus; no `innerHTML`.
 
 ## 3. Non-goals
 
-- No own backend, no cloud sync, no accounts beyond optional Google, no store or payments.
-- No recipe import/export, no social, no analytics with identifiers (to be defined).
-- No multi-unit support (grams only) nor multi-recipe parallel timer.
+- No backend, cloud sync, accounts, social features, store or payments.
+- No recipe import/export in the UI, no brew history and no parallel multi-recipe timers.
+- No units other than grams; no user-editable phase editor yet.
+- No analytics with identifiers.
+- No claim of legal/privacy compliance until the pending notice is reviewed.
 
-## 4. Non-functional requirements
+## 4. Data and persistence contract
+
+- **Aggregated, versioned data:** `src/data/methods.json`, `recipes.json` and `discovery.json`, each `{ version: 1, … }`. There is no manifest or per-recipe file.
+- **Method fields:** `id, nameKey, descriptionKey, icon, grindKey, order, limits?, parameters?`.
+- **Recipe fields:** `id, methodId, category, nameKey, ratio, coffeeDefaultG, origin, difficulty?, tags?, storyKey?, phases[], version`.
+- **Phase fields:** `type, waterAccumulatedG, durationS, instructionKey`; the last phase must be `done` with `durationS: 0`; atypical recipes require `storyKey`.
+- Field names are versioned: **never rename them**.
+- Data is parsed with Zod in `src/lib/loadData.ts`; a schema break must fail tests.
+- `difficulty` values are `easy | medium | advanced` and are translated in the UI; `tags` and `origin` are shown as raw data strings (known gap).
+
+## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
-| Client | 100% client-side; clean `tsc -b && vite build` build; `dist/ ~238KB JS` (reference 013) |
-| Data | Versioned contract (`manifest.version 1`); `validate:data` OK 7; immutable field names |
-| Quality | Green `vitest` (reference 47/47 in 013); every new behavior with test |
-| Design | Mobile-first HIG: slate tokens (`src/theme/tokens.ts`), Liquid Glass island (single layer, no scrim), floating sidebar on desktop |
-| A11y | Roles and focus per §2.11; light/dark contrast; persisted `data-theme` |
-| Security | No `innerHTML`, no secrets, https-only, validated inputs (zod); deferred `npm audit fix --force` (breaks with Vite 8) |
-| Privacy | 100% local-only; no accounts, no session, no cloud sync; no `rawData/salt`; Colombia Law 1581 notice **pending** |
-
-## 5. Data and business rules
-
-- Official = `1 JSON en src/data/recipes/ + 1 línea en manifest.json + claves en es/en.json` → `validate:data`.
-- Homemade = `localStorage` (`lib/customRecipes.ts`), with template phases; favorites separate (`lib/favorites.ts`); equipment in IndexedDB (`lib/db.ts` store `equipment`).
-- Dose: `coffee = water / ratio`; `water ≤ aguaMaxG`, `coffee ≤ cafeMaxG`, `water/210 ≤ tazasMax`; if `min===max` the input is disabled (aeropress 1-cup case).
-- Methods ordered by `orden` (1 v60, 2 chemex, 3 aeropress, 4 press).
+| Client | 100% client-side; clean `tsc -b && vite build` |
+| Build size | 300.94 kB JS (80.86 kB gzip), 23.16 kB CSS, 16 precache entries |
+| Data | Aggregated versioned JSON; Zod-validated; immutable field names |
+| Quality | `npm test` green (15 files / 142 tests); every behavior change has a test |
+| Design | Mobile-first HIG-style tokens in `src/theme/app.css`; light/dark/auto; glass tab bar; desktop sidebar |
+| Scrolling | Page never scrolls; only `.list-scroll` / `.home-scroll` / `.brew-scroll` regions scroll |
+| A11y | Semantic roles, keyboard operation, focus management, contrast, reduced motion, forced colors |
+| Security | No `innerHTML`, no secrets, https-only links, Zod validation, React escaping |
+| Privacy | Local-only; no accounts/session/network; Law 1581 notice pending |
+| PWA | Installable, precached shell, manual update flow; runtime cache limited to `/src/data/` |
 
 ## 6. Known gaps and risks
 
-1. `appId app_000000000000` placeholder — missing Geduma Auth onboarding.
-2. Final 192/512 PWA icons pending (only `icon-192.png` referenced).
-3. Law 1581 privacy notice pending with lawyer — do not claim compliance.
-4. Real-brew validation pending (times/flavors per method).
-5. Deferred `npm audit fix --force` due to Vite 8 breaking change.
+1. **Law 1581 privacy notice** pending legal review — do not claim compliance.
+2. **Tags/origin are untranslated** raw data strings; they currently read as English in the Spanish UI.
+3. **Real-brew validation** of times, ratios and flavors per method is still pending; the catalog is curated but not lab-verified.
+4. **Catalog rename impact:** favorites saved against pre-v2 recipe ids no longer match (the ids changed); equipment and custom-recipe method ids are migrated.
+5. **`npm audit fix --force` postponed** because it pulls a breaking Vite major.
+6. **IndexedDB `recipes` store reserved** but unused (custom recipes live in `localStorage`).
+7. No automated screenshot/visual regression suite; layout is covered by DOM/CSS contract tests.
 
-## 7. Acceptance criteria (for any delivery)
+## 7. Acceptance criteria (any delivery)
 
-- `npm run validate:data` OK + green `npm test` + clean `npm run build`.
-- No hardcoded copy (everything via `i18n`), no data field renames, no island/sidebar/timer regression.
-- Updated CHANGELOG (`Added/Changed/Fixed/Verified`) with the `Verified:` line actually executed.
+- `npm test` green and `npm run build` clean.
+- No hardcoded UI copy: new strings go to both dictionaries.
+- No data-field renames; no regression in scroll containment, timer flow, equipment filtering or theme.
+- CHANGELOG entry with `Added/Changed/Fixed/Verified`, and the `Verified:` line actually executed.
+- Intentional test updates documented in the CHANGELOG.
 
 ## 8. Suggested roadmap (not committed)
 
-- Close §6 gaps → homemade recipe export/import → local brew history → barista mode (phase editing in UI) → anonymous opt-in analytics.
+Close the legal and validation gaps → homemade recipe export/import → local brew history → phase editing (“barista mode”) → optional anonymous, opt-in analytics.
