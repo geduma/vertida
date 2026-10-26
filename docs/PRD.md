@@ -1,7 +1,7 @@
 # PRD — Vertida · coffee recipes and timer
 
-- **Product:** Vertida · coffee recipes and timer. 100% client-side web app (Vite + React TS + IndexedDB + PWA).
-- **Status:** v2.0.0 with the 002–029 iteration set (see `CHANGELOG.md`). Local-only; no auth. Colombian Law 1581 notice still pending legal review.
+- **Product:** Vertida · coffee recipes and timer. 100% client-side web app (Vite 8 + React TS + IndexedDB + PWA).
+- **Status:** v2.0.0 with the 002–030 iteration set (see `CHANGELOG.md`). Local-only; no auth, no user-data collection and no external database. Colombian Law 1581 notice drafted in `docs/PRIVACY.md`, pending legal review.
 - **Locales:** Spanish (default) and English. All UI copy lives in `src/i18n/es.json` / `en.json`; code and comments are in English.
 - **Unit:** grams only.
 
@@ -52,6 +52,7 @@ Primary context is mobile in the kitchen; desktop is a supported second layout.
 ### 2.5 Recipes
 
 - **40 classic recipes** across 9 methods, grouped by method order and sorted by localized display name.
+- Data `tags` render through `tag.<slug>` in both languages; `origin` is provenance metadata and is not displayed.
 - `All | Favorites` segmented filter with its own empty state; heart toggles are `aria-pressed` and persisted.
 - Cards are keyboard-operable (`Enter`/`Space`) and open the brew summary.
 - `+ New recipe` creates a homemade recipe (method, name, ratio, dose, notes) with five template phases; it is brewable and deletable and never touches the bundled data.
@@ -75,13 +76,14 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 - Theme `Light | Dark | Auto`, applied instantly, following the OS live in Auto.
 - Advanced `On | Off` (retention reference).
 - Equipment modal with counter.
-- Version row (`v{__APP_VERSION__}` from `package.json`), manual update check with feedback, local-only notice and credits link.
+- Manual update check with feedback, GitHub icon-link to the public repository, a bug/feedback button that opens a new issue, local-only notice, version row (`v{__APP_VERSION__}` from `package.json`) and credits link. The version row is always last, immediately before the credit.
+- ES↔EN stability: titles never wrap, descriptions reserve two fixed lines, action controls have fixed widths and the theme summary a fixed height, so switching language does not move any row.
 
 ### 2.9 Persistence
 
 - `localStorage`: language, theme mode, advanced, mute, favorites and homemade recipes. All access is guarded against blocked/quota storage.
-- IndexedDB `vertida` v1: `equipment` + `settings` stores for the equipment selection (atomic save, empty selection supported); `recipes` store reserved. `navigator.storage.persist()` is requested on startup.
-- Pre-v2 custom recipes migrate from Spanish field names on read; legacy method ids are mapped rather than discarded.
+- IndexedDB `vertida` v2: `equipment` + `settings` stores for the equipment selection (atomic save, empty selection supported). The unused v1 `recipes` store is deleted on upgrade. `navigator.storage.persist()` is requested on startup.
+- Pre-v2 custom recipes migrate from Spanish field names on read and legacy method ids are mapped. Preferences are explicitly **not** migrated: favorites stored with pre-v2 recipe ids stop matching and are dropped.
 
 ### 2.10 PWA, updates and offline
 
@@ -92,7 +94,7 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 ### 2.11 i18n and accessibility
 
 - `t(key)` with Spanish fallback to the key; dictionaries must have identical keys and placeholders (tested).
-- All UI copy goes through i18n; data display keys are validated by tests.
+- All UI copy goes through i18n; data display keys and `tag.<slug>` values are validated by tests.
 - Semantic tablist, radiogroups, dialogs, checkboxes and buttons; focus management in modals; visible focus; no `innerHTML`.
 
 ## 3. Non-goals
@@ -111,32 +113,32 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 - **Phase fields:** `type, waterAccumulatedG, durationS, instructionKey`; the last phase must be `done` with `durationS: 0`; atypical recipes require `storyKey`.
 - Field names are versioned: **never rename them**.
 - Data is parsed with Zod in `src/lib/loadData.ts`; a schema break must fail tests.
-- `difficulty` values are `easy | medium | advanced` and are translated in the UI; `tags` and `origin` are shown as raw data strings (known gap).
+- `difficulty` values are `easy | medium | advanced` and are translated in the UI; `tags` are translated through `tag.<slug>`; `origin` is provenance metadata (`vertida` / `custom`) and is not rendered.
 
 ## 5. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
 | Client | 100% client-side; clean `tsc -b && vite build` |
-| Build size | 300.94 kB JS (80.86 kB gzip), 23.16 kB CSS, 16 precache entries |
-| Data | Aggregated versioned JSON; Zod-validated; immutable field names |
-| Quality | `npm test` green (15 files / 142 tests); every behavior change has a test |
+| Build size | 269.74 kB JS (75.57 kB gzip), 24.24 kB CSS, 16 precache entries |
+| Data | Aggregated versioned JSON; Zod 4 (`zod/mini`) parse; immutable field names |
+| Quality | `npm test` green (16 files / 150 tests); every behavior change has a test |
+| Dependencies | `npm audit` reports 0 vulnerabilities; toolchain Vite 8 / Vitest 5 / Zod 4 |
 | Design | Mobile-first HIG-style tokens in `src/theme/app.css`; light/dark/auto; glass tab bar; desktop sidebar |
 | Scrolling | Page never scrolls; only `.list-scroll` / `.home-scroll` / `.brew-scroll` regions scroll |
 | A11y | Semantic roles, keyboard operation, focus management, contrast, reduced motion, forced colors |
-| Security | No `innerHTML`, no secrets, https-only links, Zod validation, React escaping |
-| Privacy | Local-only; no accounts/session/network; Law 1581 notice pending |
+| Security | No `innerHTML`, no secrets, https-only links, Zod validation, React escaping, 0 audit findings |
+| Privacy | Local-only; no user-data collection or external database; Law 1581 draft pending legal review |
 | PWA | Installable, precached shell, manual update flow; runtime cache limited to `/src/data/` |
 
 ## 6. Known gaps and risks
 
-1. **Law 1581 privacy notice** pending legal review — do not claim compliance.
-2. **Tags/origin are untranslated** raw data strings; they currently read as English in the Spanish UI.
-3. **Real-brew validation** of times, ratios and flavors per method is still pending; the catalog is curated but not lab-verified.
-4. **Catalog rename impact:** favorites saved against pre-v2 recipe ids no longer match (the ids changed); equipment and custom-recipe method ids are migrated.
-5. **`npm audit fix --force` postponed** because it pulls a breaking Vite major.
-6. **IndexedDB `recipes` store reserved** but unused (custom recipes live in `localStorage`).
-7. No automated screenshot/visual regression suite; layout is covered by DOM/CSS contract tests.
+1. **Law 1581 privacy notice** is drafted in `docs/PRIVACY.md` (no user-data collection, no external database) but still needs legal review — do not claim compliance.
+2. **Real-brew validation** of times, ratios and flavors per method is still pending; `docs/VALIDATION.md` is the execution protocol. The catalog is curated but not lab-verified.
+3. **Old favorites are discarded:** favorites saved against pre-v2 recipe ids no longer match and are dropped on the next save. Recipe ids are not remapped; method ids in equipment and custom recipes are still migrated.
+4. **No automated screenshot/visual regression suite**; layout is covered by DOM/CSS contract tests.
+5. **Bundle size** depends on `zod/mini`; importing full `zod` would add ~64 kB and must be treated as a regression.
+6. **Vitest 5 startup cost** is higher than Vitest 2 (~40 s for 16 files); `pool: 'vmThreads'` mitigates but does not eliminate it.
 
 ## 7. Acceptance criteria (any delivery)
 

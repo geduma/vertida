@@ -1,5 +1,56 @@
 # Changelog
 
+## [Unreleased] — 032 orden de Ajustes y estabilidad ES↔EN
+### Changed
+- `src/App.tsx` (Ajustes): la fila **Versión** pasa al final, justo antes de la fila de créditos **By geduma** y después del aviso de modo local.
+- `src/i18n/es.json`, `src/i18n/en.json`: copy más corto y simétrico entre idiomas (`settings.themeDesc`, `settings.advanced`, `settings.advancedDesc`, `settings.githubDesc`, `settings.feedback*`, `settings.update*`, `settings.localOnly`) y nueva clave `settings.updateCta` (**Buscar** / **Check**) para que el botón de actualizaciones no dependa del texto largo de la fila.
+- `src/theme/app.css`: geometría fija por fila — títulos en una línea con `ellipsis`, descripciones con caja reservada de 2 líneas (`line-clamp` + `height:2.8em`), ancho fijo para botones de equipos/actualizaciones/feedback, segmented de Avanzado y `theme-current`; se retira `content-visibility:auto` de las filas para que el scroll no cambie al alternar idioma. En pantallas ≤359 px las etiquetas se apilan sobre el control.
+- `tests/update-credits.test.tsx`: contrato de orden (versión penúltima, créditos última) y de geometría fija; `tests/i18n.test.ts`: paridad de longitud del copy de Ajustes (±8 caracteres).
+### Verified
+- `npm test` **150/150 en 16 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 entradas de precache.
+
+## [Unreleased] — 031 enlaces de proyecto y feedback en Ajustes
+### Added
+- `src/config.ts`: `repoUrl` (`https://github.com/geduma/vertida`) e `issuesUrl` (`https://github.com/geduma/vertida/issues/new`); las URLs externas siguen sin escribirse inline en componentes.
+- `src/components/GitHubIcon.tsx`: marca GitHub en SVG decorativo (`aria-hidden`), sin dependencias nuevas.
+- `src/App.tsx` (Ajustes): fila **GitHub** con icono-enlace (`data-testid="settings-github"`, `aria-label`, nueva pestaña con `noopener noreferrer`) y fila **Bugs y comentarios** con botón-enlace que abre un issue nuevo (`data-testid="settings-feedback"`).
+- `src/i18n/es.json`, `src/i18n/en.json`: claves `settings.github`, `settings.githubDesc`, `settings.githubOpen`, `settings.feedback`, `settings.feedbackDesc`, `settings.feedbackCta`.
+- `src/theme/app.css`: `.github-link` (área táctil 44×44, foco visible) y ancla con estilo de botón en las filas de Ajustes.
+- `tests/settings-links.test.tsx`: contrato de URLs, atributos de nueva pestaña, nombre accesible e icono decorativo.
+### Verified
+- `npm test` 146/146 en 16 archivos; `npm run build` limpio (`tsc -b` + Vite/PWA).
+
+## [Unreleased] — 030 pendientes: tags traducidos, preferencias sin migración, DB v2 y toolchain sin vulnerabilidades
+### Added
+- `src/i18n/es.json`, `src/i18n/en.json`: **26 claves `tag.*`** para traducir las etiquetas de datos; los diccionarios quedan en **246 claves por idioma** con paridad exacta. `src/App.tsx` resuelve `tagLabel()` y ya no imprime los slugs en inglés.
+- `docs/VALIDATION.md`: protocolo de validación en taza para las 40 clásicas + 18 descubrimientos (dosis, agua, ratio, tiempo, tags, tres intentos por receta y criterio de aceptación).
+- `docs/PRIVACY.md`: borrador de aviso de privacidad (Ley 1581) en español con resumen en inglés. Deja explícito que **no se recolectan datos de usuario**, que solo se guardan preferencias, favoritos y recetas propias en el almacenamiento local y que no existe base de datos externa.
+- `tests/recipes.test.tsx`: las etiquetas de datos se muestran traducidas.
+- `package.json`: `engines.node >=22.12.0`, alineado con Vite 8 y Vitest 5.
+### Changed
+- Toolchain mayor: **Vite 8.3.5**, **Vitest 5.0.5**, **@vitejs/plugin-react 6.1.2**, **vite-plugin-pwa 2.0.0**, **Zod 4.6.7** y TypeScript 5.9.3.
+- `src/lib/schemas.ts` migrado a **`zod/mini`** con `.check(...)`: mantiene la misma validación y reduce el bundle frente a Zod 4 completo (~64 kB menos).
+- `vite.config.ts`: `pool: 'vmThreads'` para amortiguar el coste de entorno de Vitest 5.
+- `src/lib/db.ts`: IndexedDB sube a **v2** y elimina el store `recipes` sin uso; `equipment` + `settings` siguen siendo la única persistencia IndexedDB.
+- `tests/i18n.test.ts`: ahora exige claves para `grindKey` y para cada `tag` de los datos, además de nombres, descripciones, instrucciones e historias.
+- `src/i18n/*.json`: el aviso de modo local dice explícitamente "sin cuenta ni servidor; tus datos no salen de tu dispositivo", en línea con `docs/PRIVACY.md`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: cifras reales (143 tests, 267.18 kB JS, 0 vulnerabilidades), persistencia v2, tags traducidos y enlaces a los documentos nuevos.
+### Fixed
+- Favoritos: se decidió **no conservar** los guardados con ids pre-v2. Dejan de coincidir y el usuario puede borrar sus datos; no se inventa un mapeo receta a receta. La migración de método (`prensa-francesa`) y de campos en recetas propias se mantiene porque es contenido, no preferencia.
+- `npm audit`: de **11 vulnerabilidades (2 críticas, 3 altas)** a **0**, sin `--force` y con tests/build verdes.
+- Bundle: de 300.94 kB (80.86 kB gzip) a **267.18 kB (74.90 kB gzip)** pese a subir de major el toolchain.
+### Removed
+- Store IndexedDB `recipes` (reservado y sin uso desde su creación).
+- Dependencia implícita de Zod 4 completo en el bundle de producción.
+- Cualquier migración de favoritos pre-v2: se acepta que las preferencias viejas se pierdan.
+### Verified
+- `npm test` **143/143 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite 8/PWA): **267.18 kB JS (74.90 kB gzip)**, **22.86 kB CSS**, 16 entradas de precache; `npm audit` **0 vulnerabilidades**.
+### Notes
+- El aviso de privacidad es un **borrador** con placeholders de responsable y contacto; no afirmar cumplimiento legal hasta la revisión.
+- La validación en taza **no se ejecutó**: `docs/VALIDATION.md` es el protocolo, no evidencia.
+- No volver a importar `zod` completo: el bundle crece ~64 kB y rompe el NFR de tamaño.
+- Vitest 5 tarda ~40 s en 15 archivos (antes ~decenas de segundos menos); es coste de la versión mayor, mitigado con `vmThreads`.
+
 ## [Unreleased] — 029 catálogo ampliado, i18n completo y scroll real
 ### Added
 - `src/data/recipes.json`: catálogo clásico ampliado de 18 a **40 recetas** (3–6 por método), con ids en inglés (`v60-balanced`, `chemex-three-pours`, `french-press-light-17`, `moka-partners-12`…), `difficulty` normalizada a `easy|medium|advanced` y `tags` en inglés.

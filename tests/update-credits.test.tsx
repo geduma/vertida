@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { renderApp, renderLanding, tEs } from './helpers';
+import { dEn, renderApp, renderLanding, tEs } from './helpers';
 import { CONFIG } from '../src/config';
 
 vi.mock('../src/lib/db', () => ({
@@ -44,6 +44,63 @@ describe('version indicator (US-2)', () => {
     goSettings();
     expect(screen.getByText(tEs('settings.version'))).toBeTruthy();
     expect(screen.getByTestId('app-version').textContent).toMatch(/^v\d+\.\d+\.\d+/);
+  });
+
+  it('sits at the end of the list, right before the credits row and after the local-only notice', () => {
+    const { container } = renderApp();
+    goSettings();
+    const body = container.querySelector('.settings-body')!;
+    const children = [...body.children];
+    const versionRow = screen.getByTestId('version-row');
+    const creditRow = screen.getByTestId('settings-credit').closest('.setting-row')!;
+    const notice = container.querySelector('.settings-footnote')!;
+    expect(children[children.length - 1]).toBe(creditRow);
+    expect(children.indexOf(versionRow)).toBe(children.indexOf(creditRow) - 1);
+    expect(children.indexOf(notice)).toBe(children.indexOf(versionRow) - 1);
+  });
+});
+
+describe('settings layout stability (ES↔EN)', () => {
+  it('keeps the rows in the same order with the version still before the credit after switching language', () => {
+    const { container } = renderApp();
+    goSettings();
+    const order = (): string[] =>
+      [...container.querySelectorAll('.settings-body > .setting-row')].map(row =>
+        row.getAttribute('data-testid') ??
+        row.querySelector('.setting-label-title')?.textContent ??
+        row.querySelector('.credit-link')?.textContent ??
+        ''
+      );
+
+    const spanish = order();
+    fireEvent.click(screen.getByRole('radio', { name: 'EN' }));
+    expect(screen.getByText(dEn['settings.version'])).toBeTruthy();
+    const english = order();
+    fireEvent.click(screen.getByRole('radio', { name: 'ES' }));
+    const back = order();
+
+    expect(english).toHaveLength(spanish.length);
+    expect(back).toEqual(spanish);
+    expect(english[english.length - 2]).toBe('version-row');
+    expect(english[english.length - 1]).toBe(dEn['app.credit']);
+  });
+
+  it('locks the fixed-height CSS contract that keeps rows from resizing between languages', () => {
+    const css = readFileSync('src/theme/app.css', 'utf8');
+    // content-visibility would let off-screen rows compute different sizes.
+    expect(css).not.toMatch(/\.setting-row\{content-visibility/);
+    expect(css).toMatch(/\.setting-label-title\{[^}]*white-space:nowrap/);
+    expect(css).toMatch(/\.setting-label small\{[^}]*height:2\.8em/);
+    expect(css).toMatch(/\.settings-footnote \.next\{[^}]*height:2\.8em/);
+    for (const rule of [
+      '.btn-equip{width:150px}',
+      '.btn-update{width:104px}',
+      '.btn-feedback{width:120px}',
+      '.segmented-advanced{width:184px}',
+      '.theme-current{display:block;height:18px',
+    ]) {
+      expect(css).toContain(rule);
+    }
   });
 });
 

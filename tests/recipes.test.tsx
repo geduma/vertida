@@ -78,6 +78,15 @@ describe('recipes list', () => {
     goRecipes();
     expect(screen.queryByRole('button', { name: new RegExp(`^${tEs('recipes.delete')}`) })).toBeNull();
   });
+
+  it('translates data tags instead of printing the raw English slugs', () => {
+    renderApp();
+    goRecipes();
+    const tags = within(card(v60Name)).getByText(
+      `${tEs('tag.balanced')} · ${tEs('tag.clean')}`,
+    );
+    expect(tags.textContent).not.toBe('balanced · clean');
+  });
 });
 
 describe('favorites', () => {

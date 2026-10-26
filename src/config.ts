@@ -14,6 +14,9 @@ export const CONFIG = {
   retentionGramsPerGram: 2,
   // Maker credit (US-3) — external link, never inline a URL in components
   creditUrl: 'https://geduma.com',
+  // Public project + feedback (Settings rows) — external links, never inline a URL in components
+  repoUrl: 'https://github.com/geduma/vertida',
+  issuesUrl: 'https://github.com/geduma/vertida/issues/new',
   // Default selection — must mirror methods.json ids in `order` (see tests/catalog.test.ts)
   equipment: [
     'v60',

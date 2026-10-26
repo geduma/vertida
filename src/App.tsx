@@ -11,6 +11,7 @@ import es from './i18n/es.json';
 import en from './i18n/en.json';
 import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
+import GitHubIcon from './components/GitHubIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
 import DiscoveryModal from './components/DiscoveryModal';
 import Landing from './components/Landing';
@@ -38,6 +39,11 @@ export default function App() {
     if (!d) return '';
     const slug = d.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     return dicts[lang][`difficulty.${slug}`] ?? dicts.es[`difficulty.${slug}`] ?? d;
+  };
+  /** Data tags are stable English slugs; copy lives under `tag.<slug>` so the UI stays translated. */
+  const tagLabel = (tag: string) => {
+    const slug = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return dicts[lang][`tag.${slug}`] ?? dicts.es[`tag.${slug}`] ?? tag;
   };
   const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
@@ -438,7 +444,7 @@ export default function App() {
                               <h3>{recipeDisplayName(r, t)}</h3>
                               <p className="hero-meta">{t('recipe.meta').replace('{ratio}', String(r.ratio)).replace('{coffee}', String(r.coffeeDefaultG)).replace('{phases}', String(r.phases.length)).replace('{min}', String(Math.max(1, Math.round(r.phases.reduce((a, f) => a + f.durationS, 0) / 60))))}{r.difficulty ? ` · ${difficultyLabel(r.difficulty)}` : ''}</p>
                               {(r as CustomRecipe).custom && (r as CustomRecipe).notes && <p className="next">{(r as CustomRecipe).notes}</p>}
-                              {r.tags?.length ? <p className="next">{r.tags.join(' · ')}</p> : null}
+                              {r.tags?.length ? <p className="next">{r.tags.map(tagLabel).join(' · ')}</p> : null}
                               {(r as CustomRecipe).custom && (
                                 <div>
                                   <button
@@ -508,16 +514,16 @@ export default function App() {
           <section className="surface list-scroll settings-section" aria-label={t('settings.title')}>
             <h2 className="settings-title">{t('settings.title')}</h2>
             <div className="settings-body">
-            <div className="setting-row"><span className="setting-label">{t('settings.language')}</span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.language')}</span></span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
               <button key={l} type="button" role="radio" aria-checked={lang === l} data-on={lang === l ? 'true' : 'false'} onClick={() => setLang(l)}>{l === 'es' ? 'ES' : 'EN'}</button>
             ))}</div></div>
-            <div className="setting-row setting-row-theme"><span className="setting-label">{t('settings.theme')}<small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
+            <div className="setting-row setting-row-theme"><span className="setting-label"><span className="setting-label-title">{t('settings.theme')}</span><small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
               <button key={m} type="button" role="radio" aria-checked={themeMode === m} data-on={themeMode === m ? 'true' : 'false'} onClick={() => setThemeMode(m)}>{m === 'light' ? t('settings.light') : m === 'dark' ? t('settings.dark') : t('settings.auto')}</button>
             ))}</div><small className="theme-current">{t('settings.themeCurrent')}: {themeMode === 'light' ? t('settings.light') : themeMode === 'dark' ? t('settings.dark') : `${t('settings.auto')} · ${resolvedTheme === 'dark' ? t('settings.dark') : t('settings.light')}`}</small></div></div>
-            <div className="setting-row"><span className="setting-label">{t('settings.advanced')}<small>{t('settings.advancedDesc')}</small></span><div className="segmented" role="radiogroup" aria-label={t('settings.advanced')}>{[true, false].map(v => (
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.advanced')}</span><small>{t('settings.advancedDesc')}</small></span><div className="segmented segmented-advanced" role="radiogroup" aria-label={t('settings.advanced')}>{[true, false].map(v => (
               <button key={String(v)} type="button" role="radio" aria-checked={advanced === v} data-on={advanced === v ? 'true' : 'false'} onClick={() => setAdvanced(v)}>{v ? t('common.on') : t('common.off')}</button>
             ))}</div></div>
-            <div className="setting-row"><span className="setting-label">{t('settings.equipment')}<small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.equipment')}</span><small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary btn-equip" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
             <EquipmentModal
               open={equipOpen}
               methods={cat.methods}
@@ -527,10 +533,12 @@ export default function App() {
               t={t}
               returnFocusRef={equipBtnRef}
             />
-            <div className="setting-row"><span className="setting-label">{t('settings.version')}</span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
-              <div className="setting-row"><span className="setting-label">{t('settings.update')}<small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.update')}</button></div>
-              <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
-              <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.update')}</span><small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.updateCta')}</button></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.github')}</span><small>{t('settings.githubDesc')}</small></span><a className="github-link" data-testid="settings-github" href={CONFIG.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={t('settings.githubOpen')} title={t('settings.githubOpen')}><GitHubIcon /></a></div>
+            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.feedback')}</span><small>{t('settings.feedbackDesc')}</small></span><a className="btn-secondary btn-feedback" data-testid="settings-feedback" href={CONFIG.issuesUrl} target="_blank" rel="noopener noreferrer">{t('settings.feedbackCta')}</a></div>
+            <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
+            <div className="setting-row setting-row-version" data-testid="version-row"><span className="setting-label"><span className="setting-label-title">{t('settings.version')}</span></span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
+            <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
             </div>
           </section>
         )}

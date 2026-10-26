@@ -25,22 +25,22 @@ Vertida helps you brew specialty coffee at home without friction: pick a method,
 - **Advanced retention reference.** Optional row showing approximate retained coffee (`dose × 2 g/g`); reference only.
 - **Recipes.** Grouped by method, sorted per language, `All | Favorites`, heart toggles, and `+ New recipe` for homemade recipes saved on the device.
 - **Discover.** A random atypical recipe in a modal with close / shuffle / prepare; Escape and backdrop close; shuffle avoids repeating.
-- **Settings.** Language, theme (`Light | Dark | Auto`, follows the OS live), Advanced, equipment selection, version, manual update check, local-only notice and credits.
+- **Settings.** Language, theme (`Light | Dark | Auto`, follows the OS live), Advanced, equipment selection, manual update check, GitHub project link, bug/feedback button, local-only notice, version and credits (version sits last, right before the credit). Row heights are fixed so the layout does not move when switching ES↔EN.
 - **Install & offline.** PWA manifest with 192/512 icons (any + maskable), precached shell, and a manual “Check for updates” flow.
 - **Accessible by default.** Real tablist/radiogroup/dialog semantics, keyboard-operable cards, visible focus, reduced-motion and forced-colors support.
 - **Scoped scrolling.** The page itself never scrolls; list regions scroll instead, so heroes, headers and the floating tab bar stay in place.
 
 ## Stack
 
-- Vite 5 + React 18 + TypeScript 5
-- Zod for the data contract, `idb` for the IndexedDB seam
-- `vite-plugin-pwa` (Workbox) for the service worker and manifest
-- Vitest + Testing Library + happy-dom
+- Vite 8 + React 18 + TypeScript 5
+- Zod 4 via `zod/mini` for the data contract, `idb` for the IndexedDB seam
+- `vite-plugin-pwa` 2 (Workbox) for the service worker and manifest
+- Vitest 5 + Testing Library + happy-dom
 - Plain CSS with design tokens (`src/theme/app.css`); no UI framework
 
 ## Quickstart
 
-Requires Node 22+.
+Requires Node 22.12+ (enforced in `package.json`).
 
 ```bash
 npm install
@@ -63,10 +63,10 @@ src/
                           # DiscoveryModal, UpdateDoneModal
   lib/
     calc.ts               # derive coffee/water, cup size, ratio warning, validation
-    db.ts                 # IndexedDB (equipment + settings stores, persist request)
+    db.ts                 # IndexedDB v2 (equipment + settings stores, persist request)
     prefs.ts              # safe localStorage for language/theme/advanced/mute
     customRecipes.ts      # homemade recipes + legacy contract migration
-    favorites.ts          # favorite ids
+    favorites.ts          # favorite ids (pre-v2 ids are simply discarded)
     legacyIds.ts          # pre-v2 method-id mapping
     loadData.ts           # zod-parse the three data files
     schemas.ts            # methods/phases/recipes contract
@@ -78,7 +78,7 @@ src/
     discovery.json        # 18 atypical recipes
   i18n/es.json, en.json   # all UI copy (parity enforced)
   theme/app.css           # tokens, light/dark, mobile + desktop layout
-tests/                    # 15 files, 142 tests
+tests/                    # 16 files, 150 tests
 ```
 
 ## Data contract
@@ -91,13 +91,13 @@ All three data files are aggregated and versioned (`{ "version": 1, "methods": [
 
 Field names are a versioned contract: never rename them. All display copy lives behind `*Key` fields resolved through `src/i18n/*.json`.
 
-Known gap: `tags` and `origin` are data-only free strings shown as-is (currently English in both languages), so they are not translated yet.
+`tags` are stable English slugs translated through `tag.<slug>` in both dictionaries. `origin` is provenance metadata (`vertida` / `custom`), not user-facing copy, and is not rendered. Adding a tag requires a matching `tag.<slug>` key in both languages (enforced by `tests/i18n.test.ts`).
 
 ## Persistence
 
 - **`localStorage`** — language, theme mode, advanced flag, mute, favorites and homemade recipes. Reads/writes are wrapped so blocked storage never breaks the app.
-- **IndexedDB `vertida` v1** — `equipment` and `settings` stores back the equipment selection (atomic save, empty selection supported); the `recipes` store is reserved. The app asks for `navigator.storage.persist()` on startup.
-- **Migration** — recipes saved with the pre-v2 Spanish field names are normalized on read; legacy method ids (`prensa-francesa`) are mapped to the current ids instead of being dropped.
+- **IndexedDB `vertida` v2** — `equipment` and `settings` stores back the equipment selection (atomic save, empty selection supported). The unused `recipes` store from v1 is deleted on upgrade. The app asks for `navigator.storage.persist()` on startup.
+- **Migration** — recipes saved with the pre-v2 Spanish field names and legacy method ids (`prensa-francesa`) are normalized on read. Preferences are not migrated: favorites saved against pre-v2 recipe ids no longer match and are dropped on the next save.
 - **No network** — no auth, analytics, session or remote storage.
 
 ## Quality gates
@@ -110,8 +110,9 @@ npm test && npm run build
 
 Verified for this revision:
 
-- `npm test` — **15 files, 142 tests, all passing**
-- `npm run build` — TypeScript clean; Vite build **300.94 kB JS (80.86 kB gzip)**, **23.16 kB CSS**, 16 precache entries
+- `npm test` — **16 files, 150 tests, all passing**
+- `npm run build` — TypeScript clean; Vite build **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 precache entries
+- `npm audit` — **0 vulnerabilities**
 
 ## Deploy
 
@@ -121,9 +122,11 @@ Push to `main`; `.github/workflows/azure-static-web-apps-ashy-desert-012092510.y
 
 - Product scope and gaps: [`docs/PRD.md`](docs/PRD.md)
 - Operational guide for agents: [`docs/AGENTS.md`](docs/AGENTS.md)
+- Brew validation protocol: [`docs/VALIDATION.md`](docs/VALIDATION.md)
+- Privacy notice draft (pending legal review): [`docs/PRIVACY.md`](docs/PRIVACY.md)
 - History: [`CHANGELOG.md`](CHANGELOG.md)
 - Local feature notes (gitignored): `docs/features/001-pwa-update-ux/`
 
 ## Privacy
 
-Vertida runs entirely on your device. Recipes, favorites, equipment and preferences are stored locally; there is no account, no session and no server. The Colombian privacy notice (Law 1581) is still pending legal review — do not claim compliance.
+Vertida runs entirely on your device. It does not collect user data and has no server, account, analytics or external database. Preferences, favorites, equipment and recipes you choose to save live in your browser's local storage and can be removed by clearing site data or uninstalling the app. The Colombian privacy notice (Law 1581) is still pending legal review — see [`docs/PRIVACY.md`](docs/PRIVACY.md); do not claim compliance.

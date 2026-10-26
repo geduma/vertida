@@ -50,5 +50,8 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
+    // Vitest 5 re-creates the DOM environment per file; vmThreads keeps per-file
+    // isolation without paying the full environment cost for every suite.
+    pool: 'vmThreads',
   },
 });

@@ -1,58 +1,58 @@
-import { z } from 'zod';
+import * as z from 'zod/mini';
 
 export const PhaseType = z.enum(['bloom', 'pour', 'wait', 'stir', 'manual', 'done']);
 export type PhaseType = z.infer<typeof PhaseType>;
 
 export const PhaseSchema = z.object({
   type: PhaseType,
-  waterAccumulatedG: z.number().int().nonnegative(),
-  durationS: z.number().int().nonnegative(),
-  instructionKey: z.string().min(1),
-}).refine(p => (p.type === 'done' ? p.durationS === 0 : true), {
+  waterAccumulatedG: z.int().check(z.nonnegative()),
+  durationS: z.int().check(z.nonnegative()),
+  instructionKey: z.string().check(z.minLength(1)),
+}).check(z.refine((p: { type: string; durationS: number }) => (p.type === 'done' ? p.durationS === 0 : true), {
   message: 'done must have durationS=0',
-});
+}));
 
 export const MethodLimitsSchema = z.object({
-  cupsMax: z.number().int().min(1).max(10),
+  cupsMax: z.int().check(z.minimum(1), z.maximum(10)),
   // Floor is 60 g: a single espresso dose (the smallest method cap in methods.json)
-  waterMaxG: z.number().int().min(60).max(5000),
-  coffeeMaxG: z.number().min(1).max(100).optional(),
-  ratioMin: z.number().min(1).max(50).optional(),
-  ratioMax: z.number().min(1).max(50).optional(),
+  waterMaxG: z.int().check(z.minimum(60), z.maximum(5000)),
+  coffeeMaxG: z.optional(z.number().check(z.minimum(1), z.maximum(100))),
+  ratioMin: z.optional(z.number().check(z.minimum(1), z.maximum(50))),
+  ratioMax: z.optional(z.number().check(z.minimum(1), z.maximum(50))),
 });
 
 export const MethodParamsSchema = z.object({
-  temperatureC: z.number().min(0).max(100).optional(),
-  totalTimeS: z.number().int().min(0).optional(),
+  temperatureC: z.optional(z.number().check(z.minimum(0), z.maximum(100))),
+  totalTimeS: z.optional(z.int().check(z.nonnegative())),
 });
 
 export const MethodSchema = z.object({
-  id: z.string().min(1),
-  nameKey: z.string().min(1),
-  descriptionKey: z.string().min(1),
-  icon: z.string().min(1),
-  grindKey: z.string().min(1),
-  order: z.number().int(),
-  limits: MethodLimitsSchema.optional(),
-  parameters: MethodParamsSchema.optional(),
+  id: z.string().check(z.minLength(1)),
+  nameKey: z.string().check(z.minLength(1)),
+  descriptionKey: z.string().check(z.minLength(1)),
+  icon: z.string().check(z.minLength(1)),
+  grindKey: z.string().check(z.minLength(1)),
+  order: z.int(),
+  limits: z.optional(MethodLimitsSchema),
+  parameters: z.optional(MethodParamsSchema),
 });
 
 export const RecipeSchema = z.object({
-  id: z.string().min(1),
-  methodId: z.string().min(1),
+  id: z.string().check(z.minLength(1)),
+  methodId: z.string().check(z.minLength(1)),
   category: z.enum(['classic', 'atypical']),
-  nameKey: z.string().min(1),
-  ratio: z.number().min(1).max(50),
-  coffeeDefaultG: z.number().positive().max(500),
-  origin: z.string().min(1),
-  difficulty: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  storyKey: z.string().optional(),
-  phases: z.array(PhaseSchema).min(2),
-  version: z.number().int().min(1),
-}).refine(r => (r.category === 'atypical' ? !!r.storyKey : true), {
+  nameKey: z.string().check(z.minLength(1)),
+  ratio: z.number().check(z.minimum(1), z.maximum(50)),
+  coffeeDefaultG: z.number().check(z.positive(), z.maximum(500)),
+  origin: z.string().check(z.minLength(1)),
+  difficulty: z.optional(z.string()),
+  tags: z.optional(z.array(z.string())),
+  storyKey: z.optional(z.string()),
+  phases: z.array(PhaseSchema).check(z.minLength(2)),
+  version: z.int().check(z.minimum(1)),
+}).check(z.refine((r: { category: 'classic' | 'atypical'; storyKey?: string }) => (r.category === 'atypical' ? !!r.storyKey : true), {
   message: 'atypical requires storyKey',
-});
+}));
 
 export type Recipe = z.infer<typeof RecipeSchema>;
 export type AppMethod = z.infer<typeof MethodSchema>;

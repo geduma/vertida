@@ -1,11 +1,11 @@
 import { openDB, type IDBPDatabase } from 'idb';
 
 const DB = 'vertida';
-const V = 1;
+// v2 drops the unused `recipes` store: homemade recipes live in localStorage.
+const V = 2;
 let dbp: Promise<IDBPDatabase> | null = null;
 
 const STORES: Array<[name: string, keyPath: string]> = [
-  ['recipes', 'id'],
   ['equipment', 'id'],
   ['settings', 'key'],
 ];
@@ -16,6 +16,8 @@ export function db(): Promise<IDBPDatabase> {
     try {
       dbp = openDB(DB, V, {
         upgrade(d) {
+          // Databases created by v1 still carry the reserved store; remove it once.
+          if (d.objectStoreNames.contains('recipes')) d.deleteObjectStore('recipes');
           for (const [name, keyPath] of STORES) {
             if (!d.objectStoreNames.contains(name)) d.createObjectStore(name, { keyPath });
           }

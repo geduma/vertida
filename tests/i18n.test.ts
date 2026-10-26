@@ -36,8 +36,39 @@ describe('dictionary parity', () => {
   });
 });
 
+describe('settings copy stability', () => {
+  // The Settings rows reserve fixed heights, so both languages must stay in the
+  // same ballpark or one of them gets truncated. Keep these pairs close.
+  const keys = [
+    'settings.advanced',
+    'settings.advancedDesc',
+    'settings.equipmentChoose',
+    'settings.equipmentSummary',
+    'settings.feedback',
+    'settings.feedbackCta',
+    'settings.feedbackDesc',
+    'settings.githubDesc',
+    'settings.language',
+    'settings.localOnly',
+    'settings.theme',
+    'settings.themeDesc',
+    'settings.update',
+    'settings.updateCta',
+    'settings.updateDesc',
+    'settings.updateFailed',
+    'settings.updateUnavailable',
+    'settings.version',
+  ];
+
+  it('keeps ES/EN copy within 8 characters so fixed rows never truncate one language', () => {
+    for (const k of keys) {
+      expect(Math.abs(dEs[k].length - dEn[k].length), k).toBeLessThanOrEqual(8);
+    }
+  });
+});
+
 /** Classics and discovery in one shape — only discovery rows carry `storyKey`. */
-type DataRecipe = { nameKey: string; storyKey?: string; phases: { instructionKey: string }[] };
+type DataRecipe = { nameKey: string; storyKey?: string; tags?: string[]; phases: { instructionKey: string }[] };
 const dataRecipes = (): DataRecipe[] => [...recipes.recipes, ...discovery.recipes] as DataRecipe[];
 
 describe('data ↔ i18n contract', () => {
@@ -45,15 +76,16 @@ describe('data ↔ i18n contract', () => {
   for (const m of methods.methods) {
     dataKeys.add(m.nameKey);
     dataKeys.add(m.descriptionKey);
-    // grindKey intentionally not asserted: grind.* copy is not defined yet (data-only field).
+    dataKeys.add(m.grindKey);
   }
   for (const r of dataRecipes()) {
     dataKeys.add(r.nameKey);
     if (r.storyKey) dataKeys.add(r.storyKey);
+    for (const tag of r.tags ?? []) dataKeys.add(`tag.${tag}`);
     for (const p of r.phases) dataKeys.add(p.instructionKey);
   }
 
-  it('every name/description/instruction/story key referenced by data exists in both languages', () => {
+  it('every name/description/grind/tag/instruction/story key referenced by data exists in both languages', () => {
     for (const k of dataKeys) {
       expect(dEs[k], `es ${k}`).toBeTruthy();
       expect(dEn[k], `en ${k}`).toBeTruthy();
