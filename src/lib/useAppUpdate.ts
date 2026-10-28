@@ -6,19 +6,14 @@ import { useCallback, useState } from 'react';
  * `registerType: 'autoUpdate'` alone is unreliable for installed PWAs (iOS home
  * screen, desktop installed app) and long-lived tabs: the service worker may not
  * be re-checked for days. This hook gives Settings an explicit "check for
- * updates" action:
- *
- * 1. One-shot `controllerchange` listener reloads exactly once when the new
- *    worker takes control (works in standalone, installed and tab contexts).
- * 2. `registration.update()` forces the browser to fetch the latest worker.
- * 3. A waiting worker is asked to skip waiting; an installing one is given a
- *    bounded window to activate; nothing new → "up to date".
+ * updates" action.
  */
 export type UpdateState = 'idle' | 'checking' | 'uptodate' | 'failed' | 'unavailable';
 
 const GRACE_MS = 300; // let the browser start installing the fetched worker
 const ACTIVATION_TIMEOUT_MS = 5000; // bounded wait for a new worker to activate
 const POLL_MS = 200;
+const RELOAD_FALLBACK_MS = 600; // fallback reload if controllerchange doesn't fire
 
 const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
@@ -43,12 +38,21 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
       setState('unavailable');
       return;
     }
+
+    let reloaded = false;
     const reload = () => {
+      if (reloaded) return;
+      reloaded = true;
       window.location.reload();
     };
-    navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
-    const cleanup = () =>
-      navigator.serviceWorker.removeEventListener('controllerchange', reload);
+
+    // Try to reload on controller change, but don't rely on it alone
+    const onControllerChange = () => reload();
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, { once: true });
+
+    const cleanup = () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    };
 
     try {
       await reg.update();
@@ -57,21 +61,56 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
       setState('failed');
       return;
     }
+
     // Grace period so `update()` can move the registration to "installing".
     await sleep(GRACE_MS);
+
+    // Case 1: There is already a worker waiting to be activated
     if (reg.waiting) {
-      // New worker ready → activate it; `controllerchange` triggers the reload.
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      try {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } catch {
+        // ignore
+      }
+      // Fallback in case controllerchange never fires in standalone/PWA
+      window.setTimeout(reload, RELOAD_FALLBACK_MS);
       return;
     }
+
+    // Case 2: A worker is currently installing
     if (reg.installing) {
+      const installing = reg.installing;
       const t0 = Date.now();
-      while (reg.installing && Date.now() - t0 < ACTIVATION_TIMEOUT_MS) await sleep(POLL_MS);
-      if (!reg.installing) return; // activated → controllerchange reloads
+
+      const onStateChange = () => {
+        if (installing.state === 'activated') {
+          installing.removeEventListener('statechange', onStateChange);
+          // Give the browser a moment to take control, then reload
+          window.setTimeout(reload, 150);
+        }
+      };
+
+      installing.addEventListener('statechange', onStateChange);
+
+      // Also poll as a safety net
+      while (reg.installing && Date.now() - t0 < ACTIVATION_TIMEOUT_MS) {
+        await sleep(POLL_MS);
+        if (installing.state === 'activated') break;
+      }
+
+      installing.removeEventListener('statechange', onStateChange);
+
+      if (installing.state === 'activated') {
+        window.setTimeout(reload, RELOAD_FALLBACK_MS);
+        return;
+      }
+
       cleanup();
       setState('failed');
       return;
     }
+
+    // Case 3: No new worker found
     cleanup();
     setState('uptodate');
   }, []);
