@@ -53,10 +53,21 @@ describe('app shell and navigation', () => {
   it('home shows the suggested recipe with ratio, dose and time', () => {
     renderApp();
     const home = screen.getByRole('region', { name: tEs('nav.home') });
-    const meta = home.querySelector('.hero-meta');
+    const meta = home.querySelector('.hero-kicker');
     expect(meta?.textContent).toBe(tEs('home.suggested'));
     // Suggested CTA always reads "Preparar: <name>"
     expect(screen.getByRole('button', { name: new RegExp(`^${tEs('home.prepare')}: .+`) })).toBeTruthy();
+  });
+
+  it('home method cards carry their selected state and a check affordance', () => {
+    renderApp();
+    const home = screen.getByRole('region', { name: tEs('nav.home') });
+    const cards = [...home.querySelectorAll('.home-methods .method-card')];
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      expect(card.getAttribute('data-on')).toBe('true');
+      expect(card.querySelector('.equip-check')).toBeTruthy();
+    }
   });
 });
 

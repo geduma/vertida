@@ -170,19 +170,56 @@ describe('scoped scrolling (US-4)', () => {
     const { container } = renderApp();
     expect(container.querySelector('.home .hero-home')).toBeTruthy();
     expect(container.querySelector('.home .surface.home-methods')).toBeTruthy();
+    expect(container.querySelectorAll('.home-scroll')).toHaveLength(1);
   });
 
   it('recipes and settings scroll their list containers, not the page', () => {
     const { container } = renderApp();
     fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
     expect(container.querySelector('section.surface .list-scroll')).toBeTruthy();
+    expect(container.querySelectorAll('.list-scroll')).toHaveLength(1);
     goSettings();
     expect(screen.getByRole('region', { name: tEs('settings.title') }).classList.contains('list-scroll')).toBe(true);
+    expect(container.querySelectorAll('.list-scroll')).toHaveLength(1);
   });
 
-  it('locks the page scroll in the stylesheet contract', () => {
+  it('the island renders one lens and hides for the whole brew flow', () => {
+    const { container } = renderApp();
+    expect(container.querySelectorAll('.tabbar .tab-indicator')).toHaveLength(1);
+    expect(screen.getByRole('tablist').className).not.toContain('is-hidden');
+
+    fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
+    fireEvent.click(screen.getAllByRole('button', { name: new RegExp(`^${tEs('brew.prepare')}: `) })[0]);
+    expect(screen.getByRole('tablist').className).toContain('is-hidden');
+    expect(container.querySelector('.brew-screen .screen-dock .cta')).toBeTruthy();
+    expect(container.querySelectorAll('.brew-screen .screen-scroll')).toHaveLength(1);
+  });
+
+  it('the running screen pins the primary actions above a compact secondary row', () => {
+    const { container } = renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
+    fireEvent.click(screen.getAllByRole('button', { name: new RegExp(`^${tEs('brew.prepare')}: `) })[0]);
+    fireEvent.click(screen.getByRole('button', { name: tEs('app.start') }));
+    fireEvent.click(screen.getByRole('button', { name: tEs('app.start') }));
+
+    expect(container.querySelectorAll('.timer-screen')).toHaveLength(1);
+    expect(container.querySelectorAll('.timer-dock')).toHaveLength(1);
+    expect(container.querySelectorAll('.timer-primary .cta')).toHaveLength(1);
+    expect(container.querySelectorAll('.timer-secondary button')).toHaveLength(3);
+    expect(screen.getByRole('tablist').className).toContain('is-hidden');
+  });
+
+  it('locks the page scroll and island contract in the stylesheet', () => {
     const css = readFileSync('src/theme/app.css', 'utf8');
     expect(css).toMatch(/html,body\{height:100%;overflow:hidden\}/);
     expect(css).toMatch(/\.list-scroll\{[^}]*overflow-y:auto/);
+    expect(css).toMatch(/@property --p\s*\{/);
+    expect(css).toMatch(/\.tab-indicator\{/);
+    expect(css).toMatch(/\.screen-dock\{/);
+    expect(css).toMatch(/\.timer-primary\{/);
+    expect(css).toMatch(/\.recipe-grid\{/);
+    expect(css).toMatch(/backdrop-filter:blur\(30px\) saturate\(200%\)/);
+    expect(css).toMatch(/\.method-row\{grid-template-columns:repeat\(auto-fit,minmax\(140px,1fr\)\)/);
+    expect(css).toMatch(/\.settings-section,\.recipes-screen\{[^}]*border-bottom:0/);
   });
 });

@@ -17,7 +17,7 @@ Verified with Node 22.12+.
 
 ```bash
 npm install
-npm test               # vitest run — 16 files / 150 tests
+npm test               # vitest run — 16 files / 153 tests
 npm run dev            # http://localhost:5173
 npm run build          # tsc -b && vite build
 npm run preview        # serve dist/
@@ -56,7 +56,7 @@ src/
     discovery.json        # 18 atypical recipes (each with storyKey)
   i18n/es.json, en.json   # identical key sets; placeholders must match
   theme/app.css           # tokens, light/dark/auto, mobile + desktop, scroll containers
-tests/                    # 16 files / 150 tests
+tests/                    # 16 files / 153 tests
 docs/VALIDATION.md        # brew-validation protocol (not executed yet)
 docs/PRIVACY.md           # privacy notice draft (legal review pending)
 docs/features/001-pwa-update-ux/  # update-flow spec/plan/tasks (gitignored features dir)
@@ -82,13 +82,13 @@ Three aggregated, versioned files: `{ "version": 1, "methods": [...] }` and `{ "
 
 1. **Code and comments in English. UI copy via `src/i18n/*.json`.** Never hardcode Spanish/English in `.tsx`; add keys to both dictionaries. Tests use `tEs(key)`, not literals.
 2. **Water-first dosing.** Coffee is derived (`water / ratio`). One cup is `cupSizeG(recipeBase, limits) = min(recipe base water, waterMaxG ÷ cupsMax)`. Clamp dose/water/ratio to the active method limits, with `CONFIG` fallbacks. `cupsMax === 1` disables the slider.
-3. **Brew flow is 4 screens:** summary → preview → running → done. The tab bar is hidden while running. Timer resets per recipe; guard phase indexes. Retention is reference-only behind Advanced.
+3. **Brew flow is 4 screens:** summary → preview → running → done. The tab bar is hidden for the whole flow and each step keeps its primary actions in a solid bottom dock. Timer resets per recipe; guard phase indexes. Retention is reference-only behind Advanced.
 4. **Navigation:** tabs `Home | Recipes | Settings` (`role=tablist`). Brew is a destination. No Discover tab — discovery is a modal from Home. Back links return to the origin tab.
 5. **Recipes:** grouped by method order, sorted by localized display name; `All | Favorites`; card is a keyboard-operable `role=button`; delete/favorite buttons stop propagation. Homemade recipes live only in `localStorage`.
-6. **Theme:** `PREF_KEYS.themeMode` (`light|dark|auto`) plus legacy `vertida-theme`; apply via `document.documentElement.dataset.theme`; Auto follows `matchMedia` live. Mobile: floating glass pill; desktop (`≥1024px`): floating sidebar grid.
+6. **Theme:** `PREF_KEYS.themeMode` (`light|dark|auto`) plus legacy `vertida-theme`; apply via `document.documentElement.dataset.theme`; Auto follows `matchMedia` live. Mobile: floating glass island with a sliding lens; desktop (`≥1024px`): floating glass sidebar in the grid. Exactly one glass layer per view; docks are solid.
 7. **Settings:** language and theme are segmented radiogroups; Advanced is `On | Off` segmented; equipment is a modal with footer count + Save; version comes from `__APP_VERSION__` (`package.json`) and is the **last row before the credit**; update row is wired to `useAppUpdate` (short CTA `settings.updateCta`); GitHub icon-link uses `CONFIG.repoUrl` and the bug/feedback button uses `CONFIG.issuesUrl`; credits link uses `CONFIG.creditUrl`. Keep ES/EN copy short and symmetric and preserve the fixed-height CSS (`.setting-label-title`, 2-line description box, fixed control widths) so switching language never moves a row.
 8. **Persistence:** `localStorage` for language/theme/advanced/mute/favorites/custom recipes; IndexedDB `vertida` **v2** (`equipment` + `settings`) for equipment. The unused v1 `recipes` store is deleted during the v2 upgrade. Hydrate equipment **before** persisting; `loadEquipmentIds()` returning `null` means “keep defaults”, `[]` means “nothing selected”. All storage access is guarded.
-9. **Scrolling is scoped.** The page never scrolls: `html,body{height:100%;overflow:hidden}` and `.app` is viewport-bounded. Only `.list-scroll`, `.home-scroll` and `.brew-scroll` scroll. Any new overflowing list must use one of these containers.
+9. **Scrolling is scoped.** The page never scrolls: `html,body{height:100%;overflow:hidden}` and `.app` is viewport-bounded. One scroll container per screen: `.home-scroll`, `.list-scroll`, `.screen-scroll` or `.settings-section`. Brew running uses `.timer-col`; content must reserve `--scroll-pad` so it clears the island/sidebar. Any new overflowing list must use one of these containers.
 10. **Security and dependencies:** no `innerHTML`/`dangerouslySetInnerHTML`/`document.write`, no secrets, https-only links, Zod validation, React escaping. Keep `npm audit` at 0; do not run `npm audit fix --force`, and do not import full `zod` (use `zod/mini`) — it would add ~64 kB to the bundle.
 11. **Docs live with code.** CHANGELOG entries are latest-first and grouped `Added/Changed/Fixed/Verified`; the `Verified:` line must be actually run.
 

@@ -1,5 +1,32 @@
 # Changelog
 
+## [Unreleased] — 033 liquid glass, motion and scroll integrity
+### Added
+- `src/components/TabIcon.tsx`: iconos SVG de trazo para **Home · Recetas · Ajustes** (`aria-hidden`), con etiqueta de texto siempre visible.
+- `src/theme/app.css`: sistema de movimiento con `screenIn` + escalonado `riseIn` de 60 ms, entrada de modales, lente deslizante de pestaña (`--active`), barrido del anillo (`@property --p`), feedback de pulsación y respeto total a `prefers-reduced-motion`.
+- `src/theme/app.css`: luz ambiental con gradientes radiales CSS para que el vidrio tenga algo que refractar; tokens de vidrio, `--scroll-pad`, `--island-h`, `--on-accent` y superficies sólidas para docks.
+- `docs/features/033-liquid-glass-motion-scroll/{spec,plan,tasks}.md`: alcance aprobado y matriz de verificación.
+### Changed
+- `src/App.tsx`: una sola región de scroll por pantalla (`.home-scroll`, `.list-scroll`, `.screen-scroll`); Home con hero fijo y stats/Discover antes de métodos; Recetas con grupos por método a ancho completo; Ajustes con una única sección desplazable.
+- `src/App.tsx`: la barra de pestañas se oculta en **todo** el flujo de preparación (resumen, preview, en marcha y fin), no solo en marcha; cada paso usa un dock inferior sólido con las acciones primarias siempre visibles.
+- `src/theme/app.css`: la isla vuelve a ser una capa de vidrio única (`blur(30px) saturate(2)`, relleno al 52 % claro / 54 % oscuro) con borde especular, brillo superior, sombra doble y lente; el dock y los pies de modal son sólidos. En `≥1024px` la isla se convierte en sidebar vertical de 280 px con lente vertical.
+- `src/theme/app.css`: se elimina la reserva inferior fija de `110px` del `.app` (banda muerta de ~34 px sobre la isla). Ahora el contenido ocupa la pantalla y cada contenedor reserva `--scroll-pad` (isla 68 + 24 + safe area; **92 px** medidos a 320×568), de modo que el último elemento queda siempre por encima de la isla.
+- `src/theme/app.css`: layouts responsive por altura y ancho — timer sin scroll a 320×568 (anillo `clamp()`, círculo interior en %, mega 44–64 px), Recetas 1 columna <360 y 2/3/4 según ancho; Ajustes conserva los anchos fijos de control para el contrato ES↔EN. Las cards de método usan `auto-fit` (2 columnas móvil, 3–4 tablet, 2 en la columna de 1024 y 4 a 1440) y recuperan borde, estado seleccionado y contenido centrado.
+- `index.html`: `viewport-fit=cover` y `color-scheme` para safe areas reales en iOS/Android.
+### Fixed
+- **Modales fuera de pantalla al hacer scroll en Ajustes:** `riseIn` usaba `animation-fill-mode: both`, dejando un `transform: matrix(1,0,0,1,0,0)` permanente en `.settings-body`; eso convertía la sección en *containing block* de `position:fixed` y el backdrop se dibujaba en `y=-529` con el diálogo en `y=-242`. Ahora el fill-mode es `backwards`; medido tras desplazar Ajustes 400 px: `.settings-body` con `transform:none`, backdrop `(0,0,320×568)` y modal `(12,34,296×500)` con el pie a `519 px` dentro de 568.
+- Contenido cortado bajo la isla: ninguna lista terminaba por encima de la barra. Ahora los 7 tamaños auditados (320×568 → 1440×900) muestran `lastBottom <= islandTop - 4`.
+- CTAs fuera del viewport: resumen, preview y fin usan dock; en 320×568 el CTA de resumen mide `y=508…560`, los botones de preview `508…560` y pausa/skip quedan dentro de 568 sin scroll.
+- Un solo contenedor de scroll por pantalla; se elimina el scroll anidado de Recetas y Ajustes.
+- **Bordes de Ajustes/Recetas visibles tras la isla:** las hojas móviles se sangran al ancho de la app (`margin-inline:-16px`), pierden bordes laterales/inferior y radio inferior, y su fondo se desvanece en los últimos 84 px. Así la isla ya no muestra el final del contenedor ni líneas duras, solo superficie y contenido difuminados.
+- **Cards de métodos vacías:** en 1024 px la rejilla forzaba 4 columnas de 73 px; ahora `auto-fit` da 2 columnas de 155 px en ese ancho y 4 de 164 px a 1440. Se restauran borde, fondo tintado, contenido centrado y check de método activo.
+### Verified
+- `npm test` **153/153 en 16 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **271.07 kB JS (75.87 kB gzip)**, **33.39 kB CSS**, 16 entradas de precache (antes 269.74 kB / 75.57 kB gzip y 24.24 kB CSS).
+- Auditoría headless en 320×568, 360×640, 390×844, 430×932, 768×1024, 1024×768 y 1440×900, en claro y oscuro: sin overflow horizontal, sin CTAs ocultos, un solo scroll por pantalla, última fila despejada de isla/sidebar y `blur(30px) saturate(2)` en la isla móvil y el sidebar de escritorio.
+- Rejilla de métodos medida: 320→125 px, 390→158, 768→186, 1024→155, 1440→164; sin nombres recortados.
+- Contraste oscuro medido: CTA **6.70:1**, tinta/superficie **15.21:1**, muted/superficie **9.15:1**, muted/fondo **10.05:1**.
+- Modal de equipos verificado en 320×568 con Ajustes desplazado: pie visible y sin overflow horizontal.
+
 ## [Unreleased] — 032 orden de Ajustes y estabilidad ES↔EN
 ### Changed
 - `src/App.tsx` (Ajustes): la fila **Versión** pasa al final, justo antes de la fila de créditos **By geduma** y después del aviso de modo local.

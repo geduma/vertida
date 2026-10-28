@@ -55,6 +55,7 @@ describe('brew summary (dose is water-derived)', () => {
     expect(screen.getByTestId('cup-eq').textContent).toBe(tEs('calc.cupEq').replace('{g}', String(cup)));
     expect(screen.getByText(cupsLine(1, cup))).toBeTruthy();
     expect(screen.getByRole('button', { name: `‹ ${tEs('nav.recipes')}` })).toBeTruthy();
+    expect(screen.getByRole('tablist').className).toContain('is-hidden'); // no tabs during any brew step
   });
 
   it('the cups slider scales water by the method cup and never clamps', () => {
@@ -168,10 +169,10 @@ describe('brew running (timer)', () => {
     fireEvent.click(screen.getByRole('button', { name: tEs('timer.muteOff') }));
     expect(screen.getByRole('button', { name: tEs('timer.muteOn') })).toBeTruthy();
 
-    // cancel returns to the summary and unmutes the island
+    // cancel returns to the summary; the island stays hidden for the whole brew flow
     fireEvent.click(screen.getByRole('button', { name: tEs('timer.cancel') }));
     expect(screen.getByRole('slider')).toBeTruthy();
-    expect(screen.getByRole('tablist').className).not.toContain('is-hidden');
+    expect(screen.getByRole('tablist').className).toContain('is-hidden');
   });
 
   it('a full brew completes and the done screen offers repeat', () => {
@@ -202,10 +203,12 @@ describe('brew running (timer)', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(v60.phases.length); // back on the preview
   });
 
-  it('the back link in the summary returns to the origin tab', () => {
+  it('the back link in the summary returns to the origin tab and restores the island', () => {
     renderApp();
     brewCard(v60Name);
+    expect(screen.getByRole('tablist').className).toContain('is-hidden');
     fireEvent.click(screen.getByRole('button', { name: `‹ ${tEs('nav.recipes')}` }));
     expect(screen.getByRole('region', { name: tEs('recipes.title') })).toBeTruthy();
+    expect(screen.getByRole('tablist').className).not.toContain('is-hidden');
   });
 });

@@ -12,6 +12,7 @@ import en from './i18n/en.json';
 import EquipmentModal from './components/EquipmentModal';
 import EquipmentIcon from './components/EquipmentIcon';
 import GitHubIcon from './components/GitHubIcon';
+import TabIcon from './components/TabIcon';
 import RecipeCreateModal from './components/RecipeCreateModal';
 import DiscoveryModal from './components/DiscoveryModal';
 import Landing from './components/Landing';
@@ -198,24 +199,35 @@ export default function App() {
       ? Math.min(99, Math.round((timer.totalElapsedMs / timer.totalDurationMs) * 100))
       : 0;
 
+  // Brew is a destination without a tab, so the lens parks on the origin tab while the island is hidden.
+  const activeTabIndex = Math.max(0, TABS.findIndex(x => x.id === tab));
+
   return (
     <div>
       {showLanding ? (
         <Landing t={t} onEnter={() => setShowLanding(false)} />
       ) : (
-        <div className={`app${tab === 'brew' && step === 'running' ? ' brew-running' : ''}`}>
-        <nav key={lang} className={`tabbar${tab === 'brew' && step === 'running' ? ' is-hidden' : ''}`} role="tablist" aria-label={t('nav.label')}>
+        <div className={`app${tab === 'brew' ? ' brew-flow' : ''}`}>
+        <nav key={lang} className={`tabbar${tab === 'brew' ? ' is-hidden' : ''}`} role="tablist" aria-label={t('nav.label')}>
+          <span
+            className="tab-indicator"
+            aria-hidden="true"
+            style={{ '--active': activeTabIndex } as React.CSSProperties}
+          />
           {TABS.map(({ id, labelKey }) => (
-            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'recipes') setFavOnly(false); setStep('summary'); }}>{t(labelKey)}</button>
+            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); if (id === 'recipes') setFavOnly(false); setStep('summary'); }}>
+              <span className="tab-icon" aria-hidden="true"><TabIcon id={id} /></span>
+              <span className="tab-label">{t(labelKey)}</span>
+            </button>
           ))}
         </nav>
         {tab === 'home' && (() => {
           const maxCups = Math.max(1, ...cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => m.limits?.cupsMax ?? CONFIG.cupsMax));
           return (
-            <section aria-label={t('nav.home')} className="home">
+            <section aria-label={t('nav.home')} className="home screen-enter">
               <div className="hero hero-home home-hero">
-                <p className="hero-meta">{t('home.suggested')}</p>
-                <h2>{t('home.greeting')}</h2>
+                <p className="hero-kicker">{t('home.suggested')}</p>
+                <h2 className="home-greeting">{t('home.greeting')}</h2>
                 {suggested ? (() => {
                   const sName = recipeDisplayName(suggested, t);
                   const sSecs = suggested.phases.reduce((a, f) => a + f.durationS, 0);
@@ -233,19 +245,6 @@ export default function App() {
                 </>)}
               </div>
               <div className="home-scroll">
-              <div className="surface home-methods">
-                <div className="section-head section-head-static">
-                  <div><h2>{t('home.methods')}</h2></div>
-                </div>
-                <div className="method-row home-methods-scroll">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
-                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
-                    <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
-                    <span className="method-name">{t(m.nameKey)}</span>
-                    <span className="hero-meta">{m.limits ? `${m.limits.cupsMax} · ${m.limits.waterMaxG}g` : ''}</span>
-                    <span className="equip-check" aria-hidden="true">●</span>
-                  </button>
-                ))}</div>
-              </div>
               <div className="surface home-stats">
                 <div className="stats-row">
                   <div className="stat"><b>{visibleClassics.length}</b><span>{t('home.statsRecipes')}</span></div>
@@ -259,6 +258,19 @@ export default function App() {
                     : <p className="next">{t('discover.empty')}</p>}
                 </div>
               </div>
+              <div className="surface home-methods">
+                <div className="section-head section-head-static">
+                  <div><h2>{t('home.methods')}</h2></div>
+                </div>
+                <div className="method-row home-methods-scroll">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
+                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
+                    <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
+                    <span className="method-name">{t(m.nameKey)}</span>
+                    <span className="hero-meta">{m.limits ? `${m.limits.cupsMax} · ${m.limits.waterMaxG}g` : ''}</span>
+                    <span className="equip-check" aria-hidden="true">✓</span>
+                  </button>
+                ))}</div>
+              </div>
               </div>
             </section>
           );
@@ -266,13 +278,13 @@ export default function App() {
         {tab === 'brew' && (
           <section aria-label={t('brew.section')} className="brew-section">
             {step === 'summary' && (
-              <div className="brew-screen screen-enter brew-screen-fixed">
+              <div className="brew-screen screen-enter">
                 <div className="hero brew-header">
                   <button type="button" className="back-link" onClick={() => { timer.reset(); setTab(originTab); setStep('summary'); }}>‹ {t(originTab === 'home' ? 'nav.home' : originTab === 'recipes' ? 'nav.recipes' : 'nav.settings')}</button>
                   <h2>{recipeDisplayName(recipe, t)}</h2>
                   <p className="hero-meta">{t('brew.summaryMeta').replace('{coffee}', String(coffeeEff)).replace('{water}', String(water)).replace('{ratio}', String(ratioN)).replace('{phases}', String(recipe.phases.length)).replace('{min}', String(Math.round(totalTime / 60)))}</p>
                 </div>
-                <div className="surface brew-scroll">
+                <div className="surface screen-scroll">
                   <div className="grid-2">
                     <label>{t('brew.method')} <select value={methodId} onChange={e => { const nid = e.target.value; setMethodId(nid); const r = cat.recipes.find(x => x.methodId === nid); if (r) { setRecipeId(r.id); setCups(1); setRatio(r.ratio); } }}>{cat.methods.map(m => <option key={m.id} value={m.id}>{t(m.nameKey)}</option>)}</select></label>
                     <label>{t('brew.recipe')} <select value={recipeId} onChange={e => setRecipeId(e.target.value)}>{visible.filter(r => r.methodId === methodId).map(r => <option key={r.id} value={r.id}>{recipeDisplayName(r, t)}</option>)}</select></label>
@@ -343,15 +355,19 @@ export default function App() {
                   </div>
                   {isRatioWarn(ratioN, ratioMin, ratioMax) && <p className="next warn-ratio"><b>{t('calc.warn-ratio')}</b></p>}
                   {advanced && <p className="next">{t('brew.retention')}: {(coffeeEff * CONFIG.retentionGramsPerGram).toFixed(0)} g ({t('brew.reference')})</p>}
+                </div>
+                <div className="screen-dock">
                   <button type="button" className="cta" onClick={() => setStep('preview')}>{t('app.start')}</button>
                 </div>
               </div>
             )}
             {step === 'preview' && (
-              <div className="surface screen-enter list-scroll">
-                <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
-                <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? `· ${t('phase.manual')}` : ''}</li>)}</ol>
-                <div className="form-actions">
+              <div className="brew-screen screen-enter">
+                <div className="surface screen-scroll">
+                  <h2>{t('brew.steps')} · {recipeDisplayName(recipe, t)}</h2>
+                  <ol>{recipe.phases.map((f, i) => <li key={i} style={i === 0 ? { fontWeight: 800 } : {}}>{t(f.instructionKey)} — {scaledG(f.waterAccumulatedG)} g · {f.durationS}s {f.type === 'manual' ? `· ${t('phase.manual')}` : ''}</li>)}</ol>
+                </div>
+                <div className="screen-dock">
                   <button type="button" className="btn-secondary" onClick={() => setStep('summary')}>{t('app.back')}</button>
                   <button type="button" className="cta" onClick={() => { setStep('running'); timer.start(); }}>{t('app.start')}</button>
                 </div>
@@ -361,29 +377,37 @@ export default function App() {
               const fase = recipe.phases[timer.idx] ?? recipe.phases[0];
               const faseNext = recipe.phases[timer.idx + 1];
               return (
-              <div className="surface timer-col screen-enter" aria-live="polite">
-                <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
-                <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b data-testid="timer-elapsed">{fmtMs(timer.totalElapsedMs)}</b></div></div>
-                <h2 className="mega">{scaledG(fase.waterAccumulatedG)} g</h2>
-                <p><b>{t(fase.instructionKey)}</b> · {t('brew.phaseProgress').replace('{i}', String(Math.min(timer.idx + 1, recipe.phases.length))).replace('{n}', String(recipe.phases.length))}</p>
-                {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
-                <div className="timer-actions">
-                  {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
-                  {timer.state === 'paused' && <button type="button" className="cta" data-testid="resume-btn" onClick={timer.resume}>{t('timer.resume')}</button>}
-                  <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>
-                  <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{muted ? t('timer.muteOn') : t('timer.muteOff')}</button>
-                  <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>
-                  <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.cancel')}</button>
+              <div className="timer-screen screen-enter" aria-live="polite">
+                <div className="surface timer-col">
+                  <div className="phase-dots" aria-hidden="true">{recipe.phases.map((_, i) => <i key={i} className={i === timer.idx && phaseFlash ? 'dot-flash' : ''} data-on={i <= timer.idx ? 'true' : 'false'} />)}</div>
+                  <div className="ring" style={{ ['--p' as string]: `${progress}%` }}><div><b data-testid="timer-elapsed">{fmtMs(timer.totalElapsedMs)}</b></div></div>
+                  <h2 className="mega">{scaledG(fase.waterAccumulatedG)} g</h2>
+                  <p><b>{t(fase.instructionKey)}</b> · {t('brew.phaseProgress').replace('{i}', String(Math.min(timer.idx + 1, recipe.phases.length))).replace('{n}', String(recipe.phases.length))}</p>
+                  {faseNext && <p className="next">{t('brew.next')}: {t(faseNext.instructionKey)}</p>}
                 </div>
-                {timer.state === 'done' && <button type="button" className="cta" onClick={() => setStep('done')}>{t('timer.ready')}</button>}
+                <div className="timer-dock">
+                  <div className="timer-primary">
+                    {timer.state === 'running' && <button type="button" className="cta" onClick={timer.pause}>{t('timer.pause')}</button>}
+                    {timer.state === 'paused' && <button type="button" className="cta" data-testid="resume-btn" onClick={timer.resume}>{t('timer.resume')}</button>}
+                    {timer.state === 'done' && <button type="button" className="cta" onClick={() => setStep('done')}>{t('timer.ready')}</button>}
+                    {timer.state !== 'done' && <button type="button" className="btn-secondary" onClick={timer.skip}>{t('timer.skip')}</button>}
+                  </div>
+                  <div className="timer-secondary">
+                    <button type="button" className="btn-secondary" onClick={() => setMuted(!muted)}>{muted ? t('timer.muteOn') : t('timer.muteOff')}</button>
+                    <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.reset')}</button>
+                    <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); }}>{t('timer.cancel')}</button>
+                  </div>
+                </div>
               </div>
               );
             })()}
             {step === 'done' && (
-              <div className="surface screen-enter list-scroll">
-                <h2>{t('timer.ready')}</h2>
-                <p>{recipeDisplayName(recipe, t)} · {water} g</p>
-                <div className="form-actions">
+              <div className="brew-screen screen-enter">
+                <div className="surface screen-scroll">
+                  <h2>{t('timer.ready')}</h2>
+                  <p>{recipeDisplayName(recipe, t)} · {water} g</p>
+                </div>
+                <div className="screen-dock">
                   <button type="button" className="btn-secondary" onClick={() => { timer.reset(); setStep('summary'); setTab('brew'); }}>{t('brew.home')}</button>
                   <button type="button" className="cta" onClick={() => { timer.reset(); setStep('preview'); }}>{t('app.repeat')}</button>
                 </div>
@@ -392,22 +416,54 @@ export default function App() {
           </section>
         )}
         {tab === 'recipes' && (
-          <section className="surface" aria-label={t('recipes.title')}>
+          <section className="surface recipes-screen screen-enter" aria-label={t('recipes.title')}>
             <div className="section-head">
               <div>
                 <h2>{t('recipes.title')}</h2>
                 <p className="hero-meta">{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</p>
-                {filterMethodId && (
-                  <p className="hero-meta">{t('recipes.filterBy').replace('{metodo}', t(cat.methods.find(m => m.id === filterMethodId)?.nameKey ?? filterMethodId))}</p>
-                )}
               </div>
               <button ref={createBtnRef} type="button" className="cta cta-compact" onClick={() => setCreateOpen(true)}>{t('recipes.new')}</button>
             </div>
-            <div className="segmented" role="radiogroup" aria-label={t('recipes.title')}>
-              <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFilterMethodId(null); setFavOnly(false); }}>{t('recipes.all')}</button>
-              <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
+            <div className="recipes-filters">
+              <div className="recipes-filter-row">
+                <div className="recipes-method-filter">
+                  <span className="recipes-filter-label">{t('recipes.filterByMethod')}</span>
+                  <div className="recipes-filter-bar">
+                    <select
+                      className="recipes-method-select"
+                      value={filterMethodId ?? ''}
+                      onChange={(e) => setFilterMethodId(e.target.value || null)}
+                    >
+                      <option value="">{t('recipes.methodAll')}</option>
+                      {cat.methods
+                        .filter((m) => equipmentIds.includes(m.id))
+                        .sort((a, b) => a.order - b.order)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {t(m.nameKey)}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-clear-filters"
+                      onClick={() => {
+                        setFilterMethodId(null);
+                        setFavOnly(false);
+                      }}
+                      style={{ display: (filterMethodId || favOnly) ? 'inline-flex' : 'none' }}
+                    >
+                      {t('recipes.clearFilters')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="segmented recipes-filter" role="radiogroup" aria-label={t('recipes.title')}>
+                <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFavOnly(false); }}>{t('recipes.all')}</button>
+                <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
+              </div>
             </div>
-            <div className="list-scroll">
+            <div className="list-scroll recipes-scroll">
             {(() => {
               const base = (favOnly ? visibleClassics.filter(r => favIds.includes(r.id)) : visibleClassics).filter(r => filterMethodId ? r.methodId === filterMethodId : true);
               if (base.length === 0)
@@ -419,7 +475,7 @@ export default function App() {
                 .map(m => ({ m, items: base.filter(r => r.methodId === m.id).sort((a, b) => recipeDisplayName(a, t).localeCompare(recipeDisplayName(b, t), lang)) }))
                 .filter(g => g.items.length > 0);
               return (
-                <div className="recipes-list">
+                <div className="recipes-groups">
                   {groups.map(g => (
                     <div key={g.m.id} className="method-group">
                       <div className="method-group-head">
@@ -427,7 +483,7 @@ export default function App() {
                         <h3>{t(g.m.nameKey)}</h3>
                         <p className="hero-meta">{g.items.length}</p>
                       </div>
-                      <div className="recipes-list">
+                      <div className="recipe-grid">
                         {g.items.map(r => {
                           const m = cat.methods.find(x => x.id === r.methodId);
                           return (
@@ -438,7 +494,7 @@ export default function App() {
                               tabIndex={0}
                               aria-label={`${t('brew.prepare')}: ${recipeDisplayName(r, t)}`}
                               onClick={() => brewRecipe(r, 'recipes')}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
+                              onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); brewRecipe(r, 'recipes'); } }}
                             >
                               {m && <p className="hero-meta" style={{ opacity: 0.75 }}>{t(m.nameKey)}</p>}
                               <h3>{recipeDisplayName(r, t)}</h3>
@@ -511,7 +567,7 @@ export default function App() {
           </section>
         )}
         {tab === 'settings' && (
-          <section className="surface list-scroll settings-section" aria-label={t('settings.title')}>
+          <section className="surface list-scroll settings-section screen-enter" aria-label={t('settings.title')}>
             <h2 className="settings-title">{t('settings.title')}</h2>
             <div className="settings-body">
             <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.language')}</span></span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
