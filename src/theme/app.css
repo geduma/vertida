@@ -17,6 +17,7 @@
   --ease-out:cubic-bezier(.22,1,.36,1);
   --island-h:68px;
   --scroll-pad:calc(var(--island-h) + 24px + env(safe-area-inset-bottom));
+  height: 100%;
 }
 
 :root[data-theme='light']{
@@ -56,11 +57,16 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 html,body{height:100%;overflow:hidden}
+html{min-height:100dvh}
+body{min-height:100dvh}
+html{background:var(--bg)}
 body{
   margin:0;background:var(--bg);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro',system-ui,sans-serif;
   font-size:17px;line-height:1.5;
   -webkit-tap-highlight-color:transparent;
+  min-height:100dvh;
+  min-height:100svh;
 }
 /* Ambient light gives the single glass layer something to refract. */
 body::before{
@@ -70,7 +76,7 @@ body::before{
     radial-gradient(95% 70% at 0% 100%, var(--ambient-2), transparent 58%),
     radial-gradient(70% 46% at 50% 108%, var(--ambient-3), transparent 72%);
 }
-#root{position:relative;z-index:1;height:100%}
+#root{position:relative;z-index:1;height:100%;min-height:100dvh;min-height:100svh;background:var(--bg)}
 
 h1,h2,h3{line-height:1.15;letter-spacing:-.015em;margin:0 0 6px;text-wrap:balance}
 p{margin:0 0 10px;max-width:65ch;text-wrap:pretty}
@@ -78,11 +84,17 @@ a{color:inherit}
 
 /* ---------- Shell: pages never scroll, screens do ---------- */
 .app{
-  max-width:640px;margin:0 auto;height:100dvh;overflow:hidden;
-  padding:max(16px, env(safe-area-inset-top)) 16px 0;
+  max-width:640px;margin:0 auto;height:100dvh;min-height:100dvh;min-height:100svh;overflow:hidden;
+  padding:max(16px, env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:12px;
+  background:var(--bg);
 }
-@supports not (height:100dvh){.app{height:100vh}}
+@supports not (height:100dvh){
+  .app{height:100vh;height:100svh}
+}
+@supports not (min-height:100dvh){
+  .app{min-height:100vh;min-height:100svh}
+}
 .app>section{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;flex:1}
 
 .list-scroll{overflow-y:auto}
@@ -108,8 +120,8 @@ a{color:inherit}
 }
 /* Declared after `.surface` so its 16px padding cannot eat the island clearance. */
 .home-scroll,.list-scroll,.settings-section{
-  padding-bottom:var(--scroll-pad);
-  scroll-padding-bottom:var(--scroll-pad);
+  padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));
+  scroll-padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));
 }
 .hero{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);
@@ -132,6 +144,7 @@ a{color:inherit}
     border-inline:0;border-bottom:0;border-radius:var(--r-lg) var(--r-lg) 0 0;
     box-shadow:none;
     background:linear-gradient(to bottom,var(--surface) 0,var(--surface) calc(100% - 84px),color-mix(in srgb,var(--surface) 40%,transparent) 100%);
+    padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));
   }
 }
 
@@ -232,6 +245,8 @@ label>select{
     radial-gradient(140% 140% at 50% 0%, color-mix(in srgb, var(--glass-highlight) 40%, transparent), transparent 60%),
     linear-gradient(180deg, color-mix(in srgb, var(--glass-highlight) 18%, transparent) 0%, transparent 48%),
     var(--glass-fill);
+  -webkit-backdrop-filter:blur(30px) saturate(200%);
+  backdrop-filter:blur(30px) saturate(200%);
   -webkit-backdrop-filter:blur(40px) saturate(180%) brightness(1.02);
   backdrop-filter:blur(40px) saturate(180%) brightness(1.02);
   border:1px solid var(--glass-border);
@@ -635,7 +650,7 @@ label>select{
 /* ---------- Desktop (≥1024): sidebar + content column ---------- */
 @media(min-width:1024px){
   .app{
-    max-width:1440px;padding:32px;
+    max-width:1440px;padding:32px calc(32px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(32px + env(safe-area-inset-left));
     display:grid;grid-template-columns:280px minmax(0,1fr);
     grid-template-rows:minmax(0,1fr);gap:32px;align-items:stretch;
   }
@@ -699,14 +714,14 @@ label>select{
 
 /* ---------- Short viewports: keep content and CTAs on screen ---------- */
 @media(max-height:700px){
-  .app{gap:10px;padding-top:max(12px,env(safe-area-inset-top))}
+  .app{gap:10px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom))}
   .app>section{gap:10px}
   .home-greeting{display:none}
   .hero-home{padding:12px;gap:4px}
   .hero-home .hero-meta{font-size:13px}
   .surface{padding:14px;gap:12px}
   /* The compact surface padding must not eat the island clearance on Settings. */
-  .settings-section{padding-bottom:var(--scroll-pad);scroll-padding-bottom:var(--scroll-pad)}
+  .settings-section{padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));scroll-padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom))}
   .home-scroll,.screen-enter{gap:10px}
   .ring{width:clamp(132px,38vw,168px)}
   .mega{font-size:clamp(40px,11vw,52px)}
