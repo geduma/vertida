@@ -23,7 +23,9 @@ Primary context is mobile in the kitchen; desktop is a supported second layout.
 
 - Welcome screen with brand, title, subtitle and CTA; the CTA reveals the app.
 - Three tabs — **Home · Recipes · Settings** — with `role=tablist`. Brewing is a destination reached from a recipe, not a tab.
-- Floating glass tab bar on mobile; floating sidebar in the desktop grid (`≥1024px`).
+- Floating glass island on mobile with icon + label tabs and a sliding selection lens; floating glass sidebar in the desktop grid (`≥1024px`). Exactly one glass layer per view: content never stacks glass on glass, and action docks are solid.
+- Content scrolls under the island and is never clipped by it: every scroll container reserves `--scroll-pad` (island height + 24 px + safe area), and the page itself never scrolls.
+- Motion system: screen entrance with 60 ms child stagger, modal entrance, tab-lens slide, ring sweep, and press feedback. `prefers-reduced-motion` keeps the same layout with animations disabled; forced-colors and reduced-transparency fall back to opaque surfaces.
 - Mobile-first; reduced-motion and forced-colors styles included. Below 360 px, form actions scroll horizontally on purpose.
 
 ### 2.2 Home
@@ -35,10 +37,11 @@ Primary context is mobile in the kitchen; desktop is a supported second layout.
 
 `summary → preview → running → done`
 
-- **Summary:** recipe hero, cups slider, ratio stepper, derived coffee, method limit hint, optional retention reference behind Advanced.
-- **Preview:** every phase with scaled water and duration; back and start.
-- **Running:** progress ring, large water target, phase dots, current instruction and `phase i/n`, pause/resume, skip, mute, reset and cancel. The tab bar is hidden while running.
-- **Done:** completion state with repeat/back actions.
+- **Summary:** recipe hero, cups slider, ratio stepper, derived coffee, method limit hint, optional retention reference behind Advanced. **Start** lives in a solid bottom dock.
+- **Preview:** every phase with scaled water and duration; **Back / Start** stay in the bottom dock while the phase list scrolls.
+- **Running:** progress ring, large water target, phase dots, current instruction and `phase i/n`, pause/resume, skip, mute, reset and cancel. Primary and secondary actions live in a solid bottom dock; no scrolling is required at 320×568.
+- **Done:** completion state with repeat/back actions in the bottom dock.
+- The tab bar is hidden for the **entire** brew flow (summary, preview, running, done); a back link restores the origin tab. `.app.brew-flow` uses a single desktop column.
 - Timer is per recipe and phase (`durationS`); it resets when the recipe changes. WakeLock and background timing are used where the platform allows.
 
 ### 2.4 Dosing calculator
