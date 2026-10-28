@@ -43,20 +43,36 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
     const reload = () => {
       if (reloaded) return;
       reloaded = true;
-      window.location.reload();
+      try {
+        window.location.reload();
+      } catch {
+        // ignore
+      }
     };
 
     // Try to reload on controller change, but don't rely on it alone
     const onControllerChange = () => reload();
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, { once: true });
+    try {
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, { once: true });
+    } catch {
+      // ignore
+    }
 
     const cleanup = () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      try {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      } catch {
+        // ignore
+      }
     };
+
+    // Ensure we eventually reload if an update is applied (some PWAs need a manual reload)
+    const hardReloadFallback = window.setTimeout(reload, 1500);
 
     try {
       await reg.update();
     } catch {
+      clearTimeout(hardReloadFallback);
       cleanup();
       setState('failed');
       return;
@@ -84,13 +100,21 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
 
       const onStateChange = () => {
         if (installing.state === 'activated') {
-          installing.removeEventListener('statechange', onStateChange);
+          try {
+            installing.removeEventListener('statechange', onStateChange);
+          } catch {
+            // ignore
+          }
           // Give the browser a moment to take control, then reload
           window.setTimeout(reload, 150);
         }
       };
 
-      installing.addEventListener('statechange', onStateChange);
+      try {
+        installing.addEventListener('statechange', onStateChange);
+      } catch {
+        // ignore
+      }
 
       // Also poll as a safety net
       while (reg.installing && Date.now() - t0 < ACTIVATION_TIMEOUT_MS) {
@@ -98,19 +122,42 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
         if (installing.state === 'activated') break;
       }
 
-      installing.removeEventListener('statechange', onStateChange);
+      try {
+        installing.removeEventListener('statechange', onStateChange);
+      } catch {
+        // ignore
+      }
 
       if (installing.state === 'activated') {
         window.setTimeout(reload, RELOAD_FALLBACK_MS);
         return;
       }
 
+      // If installation didn't complete in time but a worker appeared, still try to activate
+      if ((reg as ServiceWorkerRegistration).waiting) {
+        try {
+          (reg as ServiceWorkerRegistration).waiting!.postMessage({ type: 'SKIP_WAITING' });
+        } catch {
+          // ignore
+        }
+        window.setTimeout(reload, RELOAD_FALLBACK_MS);
+        return;
+      }
+
+      clearTimeout(hardReloadFallback);
       cleanup();
       setState('failed');
       return;
     }
 
     // Case 3: No new worker found
+    // Give controllerchange a moment in case autoUpdate just activated
+    await sleep(200);
+    if (reloaded) {
+      clearTimeout(hardReloadFallback);
+      return;
+    }
+    clearTimeout(hardReloadFallback);
     cleanup();
     setState('uptodate');
   }, []);
