@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CONFIG } from '../config';
+import { lockModalLayer, trapModalFocus, unlockModalLayer } from '../lib/modalLayer';
 
 type MethodOpt = { id: string; nameKey: string; limits?: { cupsMax: number; waterMaxG: number; coffeeMaxG?: number; ratioMin?: number; ratioMax?: number } };
 
@@ -13,6 +15,7 @@ type Props = {
 };
 
 export default function RecipeCreateModal({ open, methods, onClose, onSave, t, returnFocusRef }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [methodId, setMethodId] = useState(methods[0]?.id ?? '');
@@ -30,10 +33,15 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
 
   useEffect(() => {
     if (!open) return;
+    lockModalLayer();
     setErr(null);
     nameRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      trapModalFocus(e, dialogRef.current);
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -41,6 +49,7 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      unlockModalLayer();
       returnFocusRef.current?.focus();
     };
   }, [open, returnFocusRef]);
@@ -76,14 +85,14 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label={t('recipes.create')} className="surface modal">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t('recipes.create')} className="surface modal">
         <div className="modal-head">
           <div>
             <h3>{t('recipes.create')}</h3>
@@ -120,6 +129,7 @@ export default function RecipeCreateModal({ open, methods, onClose, onSave, t, r
           <button type="button" className="cta cta-compact" onClick={submit}>{t('recipes.save')}</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

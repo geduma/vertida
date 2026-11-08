@@ -20,6 +20,7 @@ import UpdateDoneModal from './components/UpdateDoneModal';
 import { useAppUpdate } from './lib/useAppUpdate';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
+import { useAppHeight } from './lib/useAppHeight';
 
 const dicts: Record<string, Record<string, string>> = { es, en };
 type Tab = 'home' | 'brew' | 'recipes' | 'settings';
@@ -33,6 +34,7 @@ const TABS: { id: OriginTab; labelKey: string }[] = [
 ];
 
 export default function App() {
+  useAppHeight();
   const cat = useMemo(() => loadCatalog(), []);
   const [lang, setLang] = useState<'es' | 'en'>(() => readLang(navigator.language.startsWith('en') ? 'en' : 'es'));
   const t = (k: string) => dicts[lang][k] ?? dicts.es[k] ?? k;
@@ -244,33 +246,33 @@ export default function App() {
                   </div>
                 </>)}
               </div>
-              <div className="home-scroll">
-              <div className="surface home-stats">
-                <div className="stats-row">
-                  <div className="stat"><b>{visibleClassics.length}</b><span>{t('home.statsRecipes')}</span></div>
-                  <div className="stat"><b>{equipmentIds.length}/{cat.methods.length}</b><span>{t('home.statsMethods')}</span></div>
-                  <div className="stat"><b>{maxCups}</b><span>{t('home.statsCups')}</span></div>
+              <div className="home-body">
+                <div className="surface home-stats">
+                  <div className="stats-row">
+                    <div className="stat"><b>{visibleClassics.length}</b><span>{t('home.statsRecipes')}</span></div>
+                    <div className="stat"><b>{equipmentIds.length}/{cat.methods.length}</b><span>{t('home.statsMethods')}</span></div>
+                    <div className="stat"><b>{maxCups}</b><span>{t('home.statsCups')}</span></div>
+                  </div>
+                  <div className="form-actions">
+                    <button type="button" className="btn-secondary" onClick={() => { setFavOnly(false); setTab('recipes'); }}>{t('nav.recipes')}</button>
+                    {discoveryPool.length
+                      ? <button type="button" className="cta" onClick={() => { setSurpriseId(pickSurprise()); setDiscoveryOpen(true); }}>{t('home.discoverCta')}</button>
+                      : <p className="next">{t('discover.empty')}</p>}
+                  </div>
                 </div>
-                <div className="form-actions">
-                  <button type="button" className="btn-secondary" onClick={() => { setFavOnly(false); setTab('recipes'); }}>{t('nav.recipes')}</button>
-                  {discoveryPool.length
-                    ? <button type="button" className="cta" onClick={() => { setSurpriseId(pickSurprise()); setDiscoveryOpen(true); }}>{t('home.discoverCta')}</button>
-                    : <p className="next">{t('discover.empty')}</p>}
+                <div className="surface home-methods">
+                  <div className="section-head section-head-static">
+                    <div><h2>{t('home.methods')}</h2></div>
+                  </div>
+                  <div className="method-row home-methods-scroll">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
+                    <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
+                      <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
+                      <span className="method-name">{t(m.nameKey)}</span>
+                      <span className="hero-meta">{m.limits ? `${m.limits.cupsMax} · ${m.limits.waterMaxG}g` : ''}</span>
+                      <span className="equip-check" aria-hidden="true">✓</span>
+                    </button>
+                  ))}</div>
                 </div>
-              </div>
-              <div className="surface home-methods">
-                <div className="section-head section-head-static">
-                  <div><h2>{t('home.methods')}</h2></div>
-                </div>
-                <div className="method-row home-methods-scroll">{cat.methods.filter(m => equipmentIds.includes(m.id)).map(m => (
-                  <button key={m.id} type="button" className="method-card" data-on="true" onClick={() => { setFilterMethodId(m.id); setTab('recipes'); }} aria-label={t(m.nameKey)}>
-                    <span className="equip-icon" aria-hidden="true"><EquipmentIcon id={m.icon} size={30} /></span>
-                    <span className="method-name">{t(m.nameKey)}</span>
-                    <span className="hero-meta">{m.limits ? `${m.limits.cupsMax} · ${m.limits.waterMaxG}g` : ''}</span>
-                    <span className="equip-check" aria-hidden="true">✓</span>
-                  </button>
-                ))}</div>
-              </div>
               </div>
             </section>
           );
@@ -416,51 +418,53 @@ export default function App() {
           </section>
         )}
         {tab === 'recipes' && (
-          <section className="surface recipes-screen screen-enter" aria-label={t('recipes.title')}>
-            <div className="section-head">
-              <div>
-                <h2>{t('recipes.title')}</h2>
-                <p className="hero-meta">{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</p>
+          <section className="recipes-screen screen-enter" aria-label={t('recipes.title')}>
+            <div className="hero recipes-header">
+              <div className="section-head">
+                <div>
+                  <h2>{t('recipes.title')}</h2>
+                  <p className="hero-meta">{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</p>
+                </div>
+                <button ref={createBtnRef} type="button" className="cta cta-compact" onClick={() => setCreateOpen(true)}>{t('recipes.new')}</button>
               </div>
-              <button ref={createBtnRef} type="button" className="cta cta-compact" onClick={() => setCreateOpen(true)}>{t('recipes.new')}</button>
-            </div>
-            <div className="recipes-filters">
-              <div className="recipes-filter-row">
-                <div className="recipes-method-filter">
-                  <span className="recipes-filter-label">{t('recipes.filterByMethod')}</span>
-                  <div className="recipes-filter-bar">
-                    <select
-                      className="recipes-method-select"
-                      value={filterMethodId ?? ''}
-                      onChange={(e) => setFilterMethodId(e.target.value || null)}
-                    >
-                      <option value="">{t('recipes.methodAll')}</option>
-                      {cat.methods
-                        .filter((m) => equipmentIds.includes(m.id))
-                        .sort((a, b) => a.order - b.order)
-                        .map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {t(m.nameKey)}
-                          </option>
-                        ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn-secondary btn-clear-filters"
-                      onClick={() => {
-                        setFilterMethodId(null);
-                        setFavOnly(false);
-                      }}
-                      style={{ display: (filterMethodId || favOnly) ? 'inline-flex' : 'none' }}
-                    >
-                      {t('recipes.clearFilters')}
-                    </button>
+              <div className="recipes-filters">
+                <div className="recipes-filter-row">
+                  <div className="recipes-method-filter">
+                    <span className="recipes-filter-label">{t('recipes.filterByMethod')}</span>
+                    <div className="recipes-filter-bar">
+                      <select
+                        className="recipes-method-select"
+                        value={filterMethodId ?? ''}
+                        onChange={(e) => setFilterMethodId(e.target.value || null)}
+                      >
+                        <option value="">{t('recipes.methodAll')}</option>
+                        {cat.methods
+                          .filter((m) => equipmentIds.includes(m.id))
+                          .sort((a, b) => a.order - b.order)
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {t(m.nameKey)}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-clear-filters"
+                        onClick={() => {
+                          setFilterMethodId(null);
+                          setFavOnly(false);
+                        }}
+                        style={{ display: (filterMethodId || favOnly) ? 'inline-flex' : 'none' }}
+                      >
+                        {t('recipes.clearFilters')}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="segmented recipes-filter" role="radiogroup" aria-label={t('recipes.title')}>
-                <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFavOnly(false); }}>{t('recipes.all')}</button>
-                <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
+                <div className="segmented recipes-filter" role="radiogroup" aria-label={t('recipes.title')}>
+                  <button type="button" role="radio" aria-checked={!favOnly} data-on={!favOnly ? 'true' : 'false'} onClick={() => { setFavOnly(false); }}>{t('recipes.all')}</button>
+                  <button type="button" role="radio" aria-checked={favOnly} data-on={favOnly ? 'true' : 'false'} onClick={() => setFavOnly(true)}>{t('recipes.favorites')}</button>
+                </div>
               </div>
             </div>
             <div className="list-scroll recipes-scroll">
@@ -567,34 +571,40 @@ export default function App() {
           </section>
         )}
         {tab === 'settings' && (
-          <section className="surface list-scroll settings-section screen-enter" aria-label={t('settings.title')}>
-            <h2 className="settings-title">{t('settings.title')}</h2>
-            <div className="settings-body">
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.language')}</span></span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
-              <button key={l} type="button" role="radio" aria-checked={lang === l} data-on={lang === l ? 'true' : 'false'} onClick={() => setLang(l)}>{l === 'es' ? 'ES' : 'EN'}</button>
-            ))}</div></div>
-            <div className="setting-row setting-row-theme"><span className="setting-label"><span className="setting-label-title">{t('settings.theme')}</span><small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
-              <button key={m} type="button" role="radio" aria-checked={themeMode === m} data-on={themeMode === m ? 'true' : 'false'} onClick={() => setThemeMode(m)}>{m === 'light' ? t('settings.light') : m === 'dark' ? t('settings.dark') : t('settings.auto')}</button>
-            ))}</div><small className="theme-current">{t('settings.themeCurrent')}: {themeMode === 'light' ? t('settings.light') : themeMode === 'dark' ? t('settings.dark') : `${t('settings.auto')} · ${resolvedTheme === 'dark' ? t('settings.dark') : t('settings.light')}`}</small></div></div>
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.advanced')}</span><small>{t('settings.advancedDesc')}</small></span><div className="segmented segmented-advanced" role="radiogroup" aria-label={t('settings.advanced')}>{[true, false].map(v => (
-              <button key={String(v)} type="button" role="radio" aria-checked={advanced === v} data-on={advanced === v ? 'true' : 'false'} onClick={() => setAdvanced(v)}>{v ? t('common.on') : t('common.off')}</button>
-            ))}</div></div>
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.equipment')}</span><small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary btn-equip" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
-            <EquipmentModal
-              open={equipOpen}
-              methods={cat.methods}
-              selected={equipmentIds}
-              onToggle={toggleEquipment}
-              onClose={() => setEquipOpen(false)}
-              t={t}
-              returnFocusRef={equipBtnRef}
-            />
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.update')}</span><small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' ? t('settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking'} onClick={() => void checkUpdate()}>{updateState === 'checking' ? <><span className="btn-spinner" aria-hidden="true" />{t('settings.updateChecking')}</> : t('settings.updateCta')}</button></div>
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.github')}</span><small>{t('settings.githubDesc')}</small></span><a className="github-link" data-testid="settings-github" href={CONFIG.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={t('settings.githubOpen')} title={t('settings.githubOpen')}><GitHubIcon /></a></div>
-            <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.feedback')}</span><small>{t('settings.feedbackDesc')}</small></span><a className="btn-secondary btn-feedback" data-testid="settings-feedback" href={CONFIG.issuesUrl} target="_blank" rel="noopener noreferrer">{t('settings.feedbackCta')}</a></div>
-            <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
-            <div className="setting-row setting-row-version" data-testid="version-row"><span className="setting-label"><span className="setting-label-title">{t('settings.version')}</span></span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
-            <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
+          <section className="settings-section screen-enter" aria-label={t('settings.title')}>
+            <div className="hero settings-header">
+              <h2 className="settings-title">{t('settings.title')}</h2>
+            </div>
+            <div className="list-scroll settings-scroll">
+              <div className="surface settings-panel">
+                <div className="settings-body">
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.language')}</span></span><div className="segmented" role="radiogroup" aria-label={t('settings.language')}>{(['es', 'en'] as const).map(l => (
+                    <button key={l} type="button" role="radio" aria-checked={lang === l} data-on={lang === l ? 'true' : 'false'} onClick={() => setLang(l)}>{l === 'es' ? 'ES' : 'EN'}</button>
+                  ))}</div></div>
+                  <div className="setting-row setting-row-theme"><span className="setting-label"><span className="setting-label-title">{t('settings.theme')}</span><small>{t('settings.themeDesc')}</small></span><div className="theme-ctl"><div className="segmented" role="radiogroup" aria-label={t('settings.theme')}>{(['light', 'dark', 'auto'] as ThemeMode[]).map(m => (
+                    <button key={m} type="button" role="radio" aria-checked={themeMode === m} data-on={themeMode === m ? 'true' : 'false'} onClick={() => setThemeMode(m)}>{m === 'light' ? t('settings.light') : m === 'dark' ? t('settings.dark') : t('settings.auto')}</button>
+                  ))}</div><small className="theme-current">{t('settings.themeCurrent')}: {themeMode === 'light' ? t('settings.light') : themeMode === 'dark' ? t('settings.dark') : `${t('settings.auto')} · ${resolvedTheme === 'dark' ? t('settings.dark') : t('settings.light')}`}</small></div></div>
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.advanced')}</span><small>{t('settings.advancedDesc')}</small></span><div className="segmented segmented-advanced" role="radiogroup" aria-label={t('settings.advanced')}>{[true, false].map(v => (
+                    <button key={String(v)} type="button" role="radio" aria-checked={advanced === v} data-on={advanced === v ? 'true' : 'false'} onClick={() => setAdvanced(v)}>{v ? t('common.on') : t('common.off')}</button>
+                  ))}</div></div>
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.equipment')}</span><small>{t('settings.equipmentSummary').replace('{n}', String(equipmentIds.length)).replace('{total}', String(cat.methods.length))}</small></span><button ref={equipBtnRef} type="button" className="btn-secondary btn-equip" onClick={() => setEquipOpen(true)}>{t('settings.equipmentChoose')}</button></div>
+                  <EquipmentModal
+                    open={equipOpen}
+                    methods={cat.methods}
+                    selected={equipmentIds}
+                    onToggle={toggleEquipment}
+                    onClose={() => setEquipOpen(false)}
+                    t={t}
+                    returnFocusRef={equipBtnRef}
+                  />
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.update')}</span><small data-testid="update-feedback" aria-live="polite">{updateState === 'checking' || updateState === 'restarting' ? t(updateState === 'restarting' ? 'settings.updateRestarting' : 'settings.updateChecking') : updateState === 'failed' ? t('settings.updateFailed') : updateState === 'unavailable' ? t('settings.updateUnavailable') : t('settings.updateDesc')}</small></span><button ref={updateBtnRef} data-testid="update-button" type="button" className="btn-secondary btn-update" disabled={updateState === 'checking' || updateState === 'restarting'} onClick={() => void checkUpdate()}>{updateState === 'checking' || updateState === 'restarting' ? <><span className="btn-spinner" aria-hidden="true" />{t(updateState === 'restarting' ? 'settings.updateRestarting' : 'settings.updateChecking')}</> : t('settings.updateCta')}</button></div>
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.github')}</span><small>{t('settings.githubDesc')}</small></span><a className="github-link" data-testid="settings-github" href={CONFIG.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={t('settings.githubOpen')} title={t('settings.githubOpen')}><GitHubIcon /></a></div>
+                  <div className="setting-row"><span className="setting-label"><span className="setting-label-title">{t('settings.feedback')}</span><small>{t('settings.feedbackDesc')}</small></span><a className="btn-secondary btn-feedback" data-testid="settings-feedback" href={CONFIG.issuesUrl} target="_blank" rel="noopener noreferrer">{t('settings.feedbackCta')}</a></div>
+                  <div className="settings-footnote"><p className="next">{t('settings.localOnly')}</p></div>
+                  <div className="setting-row setting-row-version" data-testid="version-row"><span className="setting-label"><span className="setting-label-title">{t('settings.version')}</span></span><span className="hero-meta" data-testid="app-version">v{__APP_VERSION__}</span></div>
+                  <div className="setting-row setting-row-credits settings-footer"><a className="credit-link" data-testid="settings-credit" href={CONFIG.creditUrl} target="_blank" rel="noopener noreferrer">{t('app.credit')}</a></div>
+                </div>
+              </div>
             </div>
           </section>
         )}

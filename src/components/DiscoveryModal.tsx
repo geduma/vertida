@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import EquipmentIcon from './EquipmentIcon';
+import { lockModalLayer, trapModalFocus, unlockModalLayer } from '../lib/modalLayer';
 import type { Recipe } from '../lib/schemas';
 
 type Props = {
@@ -13,15 +15,21 @@ type Props = {
 };
 
 export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose, onBrew, onReroll, t }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const brewRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!recipe) return;
+    lockModalLayer();
     brewRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      trapModalFocus(e, dialogRef.current);
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -29,20 +37,21 @@ export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      unlockModalLayer();
     };
   }, [recipe]);
 
   if (!recipe) return null;
   const secs = recipe.phases.reduce((a, f) => a + f.durationS, 0);
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label={t('discover.title')} className="surface modal">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t('discover.title')} className="surface modal">
         <div className="modal-head">
           <div>
             <h3>{t('discover.title')}</h3>
@@ -63,6 +72,7 @@ export default function DiscoveryModal({ recipe, methodName, methodIcon, onClose
           <button ref={brewRef} type="button" className="cta cta-compact" onClick={onBrew}>{t('home.prepare')}</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

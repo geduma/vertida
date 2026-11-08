@@ -1,164 +1,206 @@
 # Changelog
 
+## [Unreleased] — 036 mobile viewport, island clearance and glass blur
+### Fixed
+- **Blank band below the floating island (iPhone 15 Plus, installed PWA):** `.app` and `.landing` now take `height:var(--app-h,100dvh)` with the existing `100dvh`/`100svh`/`100vh` fallbacks, and the new `src/lib/useAppHeight.ts` hook measures `window.innerHeight` into `--app-h` on mount and on `resize`/`orientationchange` (`visualViewport` is intentionally not used, so the keyboard does not shrink the shell).
+- **Over-reported bottom safe area:** added `--safe-bottom:min(env(safe-area-inset-bottom, 0px), 34px)` and reused it in `.app`, `.tabbar`, `.screen-dock`, `.timer-dock`, `.modal-backdrop`, `.landing` and the desktop/short-viewport media queries. `--scroll-pad` is now `calc(var(--island-h) + 24px)`, so the inset is no longer counted twice.
+- **Home Methods panel running behind the island:** the `Methods` surface now stops 12 px above the island — `.home-body` reserves `padding-bottom:calc(var(--island-h) + 12px)` — and the `--scroll-pad` reserve applies only to `.list-scroll` (Recipes/Settings); `.home-methods-scroll` no longer reserves it. The desktop `@media(min-width:1024px)` override keeps `.home-body{padding-bottom:0;scroll-padding-bottom:0}`.
+- **Content stayed sharp behind the island:** removed `transform:translateZ(0)` and `will-change:backdrop-filter` from `.tabbar`, plus `-webkit-overflow-scrolling:touch` from `.list-scroll`, `.screen-scroll` and `.home-methods-scroll`, so iOS samples the backdrop instead of excluding a promoted layer.
+- **Light canvas in dark mode on the installed PWA:** removed the inline `style` attributes from `<html>` and `<body>` in `index.html`; height and background are owned by the theme CSS on `html`, `body` and `#root`.
+- **Test contract updated intentionally:** `tests/update-credits.test.tsx` now asserts the scroll pad lives only on `.list-scroll` (never on `.home-methods-scroll`), that `.home-body` clears the island with `padding-bottom:calc(var(--island-h) + 12px)`, that `will-change:backdrop-filter` and `-webkit-overflow-scrolling:touch` are absent, and that `--safe-bottom` is capped with `min(env(safe-area-inset-bottom …), 34px)`. New `tests/app-height.test.ts` covers the `--app-h` mount and resize updates.
+### Verified
+- `npm test` **158/158 across 18 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **274.35 kB JS (76.73 kB gzip)**, **34.98 kB CSS (7.61 kB gzip)**, 16 precache entries (304.04 KiB).
+
+## [Unreleased] — 035 English documentation refresh
+### Changed
+- `docs/PRIVACY.md`: translated the full working draft from Spanish to English, keeping the legal-review warning, placeholders and the note that a Spanish version must be prepared for the Colombian market before publication.
+- `CHANGELOG.md`: translated the Spanish entries (034–025 and the older mixed sections) to English so the whole history is readable in one language.
+- `docs/AGENTS.md`: updated the test counts (17 files / 157 tests), added `appRestart.ts` and `modalLayer.ts` to the repo map, documented the full-restart update flow, the portaled/inert modals and the current scroll containers, and removed stale `docs/features/` references.
+- `docs/PRD.md`: updated the iteration range to 002–034, the build/test figures, the scroll model (`.home-methods-scroll`, `.list-scroll`, `.screen-scroll`), the `restarting` update state and the modal isolation behaviour.
+- `README.md`: refreshed test counts and build sizes, documented the full-restart update flow and modal isolation, and removed the non-existent gitignored feature-notes path.
+### Verified
+- `npm test` **157/157 across 17 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **273.98 kB JS (76.61 kB gzip)**, **35.12 kB CSS (7.61 kB gzip)**, 16 precache entries.
+- `git diff --check` clean; no source, data or i18n behaviour changed by this documentation pass.
+
+## [Unreleased] — 034 unified containers, scroll-free Home, real restart and isolated modals
+### Added
+- `src/lib/appRestart.ts`: full app restart — purges every Cache Storage entry, unregisters the service workers and navigates to a URL with the unique `__vertida_restart` parameter so the document is fetched from the network.
+- `src/lib/modalLayer.ts`: shared modal layer — open counter, `inert` on `.app`, island hiding and a Tab/Shift+Tab focus trap.
+- `tests/app-restart.test.ts`: contract for the restart URL, cache purge, worker unregister and fallback navigation.
+### Changed
+- `src/App.tsx` (Recipes and Settings): the container is no longer a full-screen sheet; both screens use Home's pattern —fixed `.hero` header and a single `.list-scroll` with `.surface` cards— so they keep the same borders, radius and 16 px margins.
+- `src/App.tsx` (Home): the hero and stats stay fixed; only the method grid (`.home-methods-scroll`) can scroll inside `.home-body`, which never scrolls. On desktop the `grid` distributes methods and stats without enabling page scroll.
+- `src/lib/useAppUpdate.ts`: after `reg.update()` it briefly waits for a worker in `waiting`/`installing`; if one exists it sends `SKIP_WAITING` and calls `restartApp()`. With no new worker it reports “up to date” without restarting. New `restarting` state.
+- `src/i18n/es.json`, `src/i18n/en.json`: `settings.updateRestarting` key (**Reiniciando…** / **Restarting…**) for the button and feedback during the restart.
+- `src/components/{EquipmentModal,RecipeCreateModal,DiscoveryModal,UpdateDoneModal}.tsx`: dialogs mount through `createPortal` into `document.body` and use the shared modal layer.
+- `src/theme/app.css`: removes the mobile Recipes/Settings bleed (`margin-inline:-16px`, no side/bottom borders or bottom radius); the backdrop rises to `z-index:120` and darkens; `body[data-modal='true']` hides the island and blocks overscroll; `.btn-equip` becomes `width:auto;min-width:150px;padding-inline:18px`.
+### Fixed
+- **Clipped “Choose equipment” label:** the fixed 150 px width no longer truncates the ES/EN label; the button grows to the available width without overflowing the row.
+- **Background and island reachable with a modal open:** the app content becomes `inert`, the floating island is hidden and focus cannot leave the dialog, with Tab or touch.
+- **Update not applying on installed iOS:** the restart no longer relies on `location.reload()` or `controllerchange`; caches and workers are removed before navigating, so the new build loads without closing and reopening the app by hand.
+### Verified
+- `npm test` **157/157 across 17 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **273.98 kB JS (76.61 kB gzip)**, **35.12 kB CSS (7.61 kB gzip)**, 16 precache entries (303.93 KiB).
+- The update-flow test waits for the “up to date” dialog with a 3 s margin; the real restart is covered with mocked `caches`, `serviceWorker` and `location.replace`.
+
 ## [Unreleased] — 033 liquid glass, motion and scroll integrity
 ### Added
-- `src/components/TabIcon.tsx`: iconos SVG de trazo para **Home · Recetas · Ajustes** (`aria-hidden`), con etiqueta de texto siempre visible.
-- `src/theme/app.css`: sistema de movimiento con `screenIn` + escalonado `riseIn` de 60 ms, entrada de modales, lente deslizante de pestaña (`--active`), barrido del anillo (`@property --p`), feedback de pulsación y respeto total a `prefers-reduced-motion`.
-- `src/theme/app.css`: luz ambiental con gradientes radiales CSS para que el vidrio tenga algo que refractar; tokens de vidrio, `--scroll-pad`, `--island-h`, `--on-accent` y superficies sólidas para docks.
-- `docs/features/033-liquid-glass-motion-scroll/{spec,plan,tasks}.md`: alcance aprobado y matriz de verificación.
+- `src/components/TabIcon.tsx`: stroke SVG icons for **Home · Recipes · Settings** (`aria-hidden`), with an always-visible text label.
+- `src/theme/app.css`: motion system with `screenIn` + 60 ms staggered `riseIn`, modal entrance, sliding tab lens (`--active`), ring sweep (`@property --p`), press feedback and full respect for `prefers-reduced-motion`.
+- `src/theme/app.css`: ambient light with CSS radial gradients so the glass has something to refract; glass tokens, `--scroll-pad`, `--island-h`, `--on-accent` and solid surfaces for docks.
+- `docs/features/033-liquid-glass-motion-scroll/{spec,plan,tasks}.md`: approved scope and verification matrix.
 ### Changed
-- `src/App.tsx`: una sola región de scroll por pantalla (`.home-scroll`, `.list-scroll`, `.screen-scroll`); Home con hero fijo y stats/Discover antes de métodos; Recetas con grupos por método a ancho completo; Ajustes con una única sección desplazable.
-- `src/App.tsx`: la barra de pestañas se oculta en **todo** el flujo de preparación (resumen, preview, en marcha y fin), no solo en marcha; cada paso usa un dock inferior sólido con las acciones primarias siempre visibles.
-- `src/theme/app.css`: la isla vuelve a ser una capa de vidrio única (`blur(30px) saturate(2)`, relleno al 52 % claro / 54 % oscuro) con borde especular, brillo superior, sombra doble y lente; el dock y los pies de modal son sólidos. En `≥1024px` la isla se convierte en sidebar vertical de 280 px con lente vertical.
-- `src/theme/app.css`: se elimina la reserva inferior fija de `110px` del `.app` (banda muerta de ~34 px sobre la isla). Ahora el contenido ocupa la pantalla y cada contenedor reserva `--scroll-pad` (isla 68 + 24 + safe area; **92 px** medidos a 320×568), de modo que el último elemento queda siempre por encima de la isla.
-- `src/theme/app.css`: layouts responsive por altura y ancho — timer sin scroll a 320×568 (anillo `clamp()`, círculo interior en %, mega 44–64 px), Recetas 1 columna <360 y 2/3/4 según ancho; Ajustes conserva los anchos fijos de control para el contrato ES↔EN. Las cards de método usan `auto-fit` (2 columnas móvil, 3–4 tablet, 2 en la columna de 1024 y 4 a 1440) y recuperan borde, estado seleccionado y contenido centrado.
-- `index.html`: `viewport-fit=cover` y `color-scheme` para safe areas reales en iOS/Android.
+- `src/App.tsx`: one scroll region per screen (`.home-scroll`, `.list-scroll`, `.screen-scroll`); Home with a fixed hero and stats/Discover before methods; Recipes with full-width method groups; Settings with a single scrollable section.
+- `src/App.tsx`: the tab bar is hidden across the **entire** brew flow (summary, preview, running and done), not only while running; each step uses a solid bottom dock with the primary actions always visible.
+- `src/theme/app.css`: the island is a single glass layer again (`blur(30px) saturate(2)`, 52 % light / 54 % dark fill) with a specular border, top sheen, double shadow and lens; the dock and modal footers are solid. At `≥1024px` the island becomes a 280 px vertical sidebar with a vertical lens.
+- `src/theme/app.css`: removes the fixed `110px` bottom reserve on `.app` (a ~34 px dead band above the island). Content now fills the screen and each container reserves `--scroll-pad` (island 68 + 24 + safe area; **92 px** measured at 320×568), so the last item always sits above the island.
+- `src/theme/app.css`: height- and width-responsive layouts — timer without scroll at 320×568 (`clamp()` ring, percentage inner circle, 44–64 px mega), Recipes 1 column <360 and 2/3/4 by width; Settings keeps the fixed control widths for the ES↔EN contract. Method cards use `auto-fit` (2 columns mobile, 3–4 tablet, 2 in the 1024 column and 4 at 1440) and recover border, selected state and centered content.
+- `index.html`: `viewport-fit=cover` and `color-scheme` for real safe areas on iOS/Android.
 ### Fixed
-- **Modales fuera de pantalla al hacer scroll en Ajustes:** `riseIn` usaba `animation-fill-mode: both`, dejando un `transform: matrix(1,0,0,1,0,0)` permanente en `.settings-body`; eso convertía la sección en *containing block* de `position:fixed` y el backdrop se dibujaba en `y=-529` con el diálogo en `y=-242`. Ahora el fill-mode es `backwards`; medido tras desplazar Ajustes 400 px: `.settings-body` con `transform:none`, backdrop `(0,0,320×568)` y modal `(12,34,296×500)` con el pie a `519 px` dentro de 568.
-- Contenido cortado bajo la isla: ninguna lista terminaba por encima de la barra. Ahora los 7 tamaños auditados (320×568 → 1440×900) muestran `lastBottom <= islandTop - 4`.
-- CTAs fuera del viewport: resumen, preview y fin usan dock; en 320×568 el CTA de resumen mide `y=508…560`, los botones de preview `508…560` y pausa/skip quedan dentro de 568 sin scroll.
-- Un solo contenedor de scroll por pantalla; se elimina el scroll anidado de Recetas y Ajustes.
-- **Bordes de Ajustes/Recetas visibles tras la isla:** las hojas móviles se sangran al ancho de la app (`margin-inline:-16px`), pierden bordes laterales/inferior y radio inferior, y su fondo se desvanece en los últimos 84 px. Así la isla ya no muestra el final del contenedor ni líneas duras, solo superficie y contenido difuminados.
-- **Cards de métodos vacías:** en 1024 px la rejilla forzaba 4 columnas de 73 px; ahora `auto-fit` da 2 columnas de 155 px en ese ancho y 4 de 164 px a 1440. Se restauran borde, fondo tintado, contenido centrado y check de método activo.
+- **Modals off-screen when Settings was scrolled:** `riseIn` used `animation-fill-mode: both`, leaving a permanent `transform: matrix(1,0,0,1,0,0)` on `.settings-body`; that turned the section into the containing block for `position:fixed` and the backdrop rendered at `y=-529` with the dialog at `y=-242`. Fill-mode is now `backwards`; measured after scrolling Settings 400 px: `.settings-body` with `transform:none`, backdrop `(0,0,320×568)` and modal `(12,34,296×500)` with the footer at `519 px` inside 568.
+- Content clipped under the island: no list ended above the bar. The 7 audited sizes (320×568 → 1440×900) now show `lastBottom <= islandTop - 4`.
+- CTAs outside the viewport: summary, preview and done use a dock; at 320×568 the summary CTA measures `y=508…560`, the preview buttons `508…560`, and pause/skip stay inside 568 without scrolling.
+- One scroll container per screen; nested scrolling is removed from Recipes and Settings.
+- **Settings/Recipes borders visible behind the island:** mobile sheets bleed to the app width (`margin-inline:-16px`), lose side/bottom borders and bottom radius, and their background fades over the last 84 px. The island no longer shows the container edge or hard lines, only blurred surface and content.
+- **Empty method cards:** at 1024 px the grid forced 4 columns of 73 px; `auto-fit` now gives 2 columns of 155 px at that width and 4 of 164 px at 1440. Border, tinted background, centered content and active-method check are restored.
 ### Verified
-- `npm test` **153/153 en 16 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **271.07 kB JS (75.87 kB gzip)**, **33.39 kB CSS**, 16 entradas de precache (antes 269.74 kB / 75.57 kB gzip y 24.24 kB CSS).
-- Auditoría headless en 320×568, 360×640, 390×844, 430×932, 768×1024, 1024×768 y 1440×900, en claro y oscuro: sin overflow horizontal, sin CTAs ocultos, un solo scroll por pantalla, última fila despejada de isla/sidebar y `blur(30px) saturate(2)` en la isla móvil y el sidebar de escritorio.
-- Rejilla de métodos medida: 320→125 px, 390→158, 768→186, 1024→155, 1440→164; sin nombres recortados.
-- Contraste oscuro medido: CTA **6.70:1**, tinta/superficie **15.21:1**, muted/superficie **9.15:1**, muted/fondo **10.05:1**.
-- Modal de equipos verificado en 320×568 con Ajustes desplazado: pie visible y sin overflow horizontal.
+- `npm test` **153/153 across 16 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **271.07 kB JS (75.87 kB gzip)**, **33.39 kB CSS**, 16 precache entries (previously 269.74 kB / 75.57 kB gzip and 24.24 kB CSS).
+- Headless audit at 320×568, 360×640, 390×844, 430×932, 768×1024, 1024×768 and 1440×900, light and dark: no horizontal overflow, no hidden CTAs, one scroll per screen, last row clear of the island/sidebar and `blur(30px) saturate(2)` on the mobile island and desktop sidebar.
+- Measured method grid: 320→125 px, 390→158, 768→186, 1024→155, 1440→164; no clipped names.
+- Measured dark contrast: CTA **6.70:1**, ink/surface **15.21:1**, muted/surface **9.15:1**, muted/background **10.05:1**.
+- Equipment modal verified at 320×568 with Settings scrolled: footer visible and no horizontal overflow.
 
-## [Unreleased] — 032 orden de Ajustes y estabilidad ES↔EN
+## [Unreleased] — 032 Settings order and ES↔EN stability
 ### Changed
-- `src/App.tsx` (Ajustes): la fila **Versión** pasa al final, justo antes de la fila de créditos **By geduma** y después del aviso de modo local.
-- `src/i18n/es.json`, `src/i18n/en.json`: copy más corto y simétrico entre idiomas (`settings.themeDesc`, `settings.advanced`, `settings.advancedDesc`, `settings.githubDesc`, `settings.feedback*`, `settings.update*`, `settings.localOnly`) y nueva clave `settings.updateCta` (**Buscar** / **Check**) para que el botón de actualizaciones no dependa del texto largo de la fila.
-- `src/theme/app.css`: geometría fija por fila — títulos en una línea con `ellipsis`, descripciones con caja reservada de 2 líneas (`line-clamp` + `height:2.8em`), ancho fijo para botones de equipos/actualizaciones/feedback, segmented de Avanzado y `theme-current`; se retira `content-visibility:auto` de las filas para que el scroll no cambie al alternar idioma. En pantallas ≤359 px las etiquetas se apilan sobre el control.
-- `tests/update-credits.test.tsx`: contrato de orden (versión penúltima, créditos última) y de geometría fija; `tests/i18n.test.ts`: paridad de longitud del copy de Ajustes (±8 caracteres).
+- `src/App.tsx` (Settings): the **Version** row moves to the end, right before the **By geduma** credit row and after the local-mode notice.
+- `src/i18n/es.json`, `src/i18n/en.json`: shorter, symmetric copy across languages (`settings.themeDesc`, `settings.advanced`, `settings.advancedDesc`, `settings.githubDesc`, `settings.feedback*`, `settings.update*`, `settings.localOnly`) and a new `settings.updateCta` key (**Buscar** / **Check**) so the update button does not depend on the row's long text.
+- `src/theme/app.css`: fixed row geometry — one-line titles with `ellipsis`, description boxes reserving 2 lines (`line-clamp` + `height:2.8em`), fixed widths for equipment/update/feedback buttons, the Advanced segmented control and `theme-current`; `content-visibility:auto` is removed from rows so scrolling does not change when switching languages. At ≤359 px labels stack above the control.
+- `tests/update-credits.test.tsx`: order contract (version penultimate, credit last) and fixed-geometry contract; `tests/i18n.test.ts`: Settings copy length parity (±8 characters).
 ### Verified
-- `npm test` **150/150 en 16 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 entradas de precache.
+- `npm test` **150/150 across 16 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 precache entries.
 
-## [Unreleased] — 031 enlaces de proyecto y feedback en Ajustes
+## [Unreleased] — 031 project links and feedback in Settings
 ### Added
-- `src/config.ts`: `repoUrl` (`https://github.com/geduma/vertida`) e `issuesUrl` (`https://github.com/geduma/vertida/issues/new`); las URLs externas siguen sin escribirse inline en componentes.
-- `src/components/GitHubIcon.tsx`: marca GitHub en SVG decorativo (`aria-hidden`), sin dependencias nuevas.
-- `src/App.tsx` (Ajustes): fila **GitHub** con icono-enlace (`data-testid="settings-github"`, `aria-label`, nueva pestaña con `noopener noreferrer`) y fila **Bugs y comentarios** con botón-enlace que abre un issue nuevo (`data-testid="settings-feedback"`).
-- `src/i18n/es.json`, `src/i18n/en.json`: claves `settings.github`, `settings.githubDesc`, `settings.githubOpen`, `settings.feedback`, `settings.feedbackDesc`, `settings.feedbackCta`.
-- `src/theme/app.css`: `.github-link` (área táctil 44×44, foco visible) y ancla con estilo de botón en las filas de Ajustes.
-- `tests/settings-links.test.tsx`: contrato de URLs, atributos de nueva pestaña, nombre accesible e icono decorativo.
+- `src/config.ts`: `repoUrl` (`https://github.com/geduma/vertida`) and `issuesUrl` (`https://github.com/geduma/vertida/issues/new`); external URLs are still never written inline in components.
+- `src/components/GitHubIcon.tsx`: decorative GitHub SVG mark (`aria-hidden`), no new dependencies.
+- `src/App.tsx` (Settings): **GitHub** row with an icon-link (`data-testid="settings-github"`, `aria-label`, new tab with `noopener noreferrer`) and **Bugs and feedback** row with a link-button that opens a new issue (`data-testid="settings-feedback"`).
+- `src/i18n/es.json`, `src/i18n/en.json`: `settings.github`, `settings.githubDesc`, `settings.githubOpen`, `settings.feedback`, `settings.feedbackDesc`, `settings.feedbackCta` keys.
+- `src/theme/app.css`: `.github-link` (44×44 touch target, visible focus) and a button-styled anchor in Settings rows.
+- `tests/settings-links.test.tsx`: URL contract, new-tab attributes, accessible name and decorative icon.
 ### Verified
-- `npm test` 146/146 en 16 archivos; `npm run build` limpio (`tsc -b` + Vite/PWA).
+- `npm test` 146/146 across 16 files; clean `npm run build` (`tsc -b` + Vite/PWA).
 
-## [Unreleased] — 030 pendientes: tags traducidos, preferencias sin migración, DB v2 y toolchain sin vulnerabilidades
+## [Unreleased] — 030 pending items: translated tags, preferences without migration, DB v2 and vulnerability-free toolchain
 ### Added
-- `src/i18n/es.json`, `src/i18n/en.json`: **26 claves `tag.*`** para traducir las etiquetas de datos; los diccionarios quedan en **246 claves por idioma** con paridad exacta. `src/App.tsx` resuelve `tagLabel()` y ya no imprime los slugs en inglés.
-- `docs/VALIDATION.md`: protocolo de validación en taza para las 40 clásicas + 18 descubrimientos (dosis, agua, ratio, tiempo, tags, tres intentos por receta y criterio de aceptación).
-- `docs/PRIVACY.md`: borrador de aviso de privacidad (Ley 1581) en español con resumen en inglés. Deja explícito que **no se recolectan datos de usuario**, que solo se guardan preferencias, favoritos y recetas propias en el almacenamiento local y que no existe base de datos externa.
-- `tests/recipes.test.tsx`: las etiquetas de datos se muestran traducidas.
-- `package.json`: `engines.node >=22.12.0`, alineado con Vite 8 y Vitest 5.
+- `src/i18n/es.json`, `src/i18n/en.json`: **26 `tag.*` keys** to translate data labels; both dictionaries reach **246 keys per language** with exact parity. `src/App.tsx` resolves `tagLabel()` and no longer prints the English slugs.
+- `docs/VALIDATION.md`: in-cup validation protocol for the 40 classics + 18 discoveries (dose, water, ratio, time, tags, three attempts per recipe and acceptance criteria).
+- `docs/PRIVACY.md`: privacy-notice draft (Law 1581) in Spanish with an English summary. It states explicitly that **no user data is collected**, that only preferences, favorites and own recipes are stored in local storage, and that there is no external database.
+- `tests/recipes.test.tsx`: data tags render translated.
+- `package.json`: `engines.node >=22.12.0`, aligned with Vite 8 and Vitest 5.
 ### Changed
-- Toolchain mayor: **Vite 8.3.5**, **Vitest 5.0.5**, **@vitejs/plugin-react 6.1.2**, **vite-plugin-pwa 2.0.0**, **Zod 4.6.7** y TypeScript 5.9.3.
-- `src/lib/schemas.ts` migrado a **`zod/mini`** con `.check(...)`: mantiene la misma validación y reduce el bundle frente a Zod 4 completo (~64 kB menos).
-- `vite.config.ts`: `pool: 'vmThreads'` para amortiguar el coste de entorno de Vitest 5.
-- `src/lib/db.ts`: IndexedDB sube a **v2** y elimina el store `recipes` sin uso; `equipment` + `settings` siguen siendo la única persistencia IndexedDB.
-- `tests/i18n.test.ts`: ahora exige claves para `grindKey` y para cada `tag` de los datos, además de nombres, descripciones, instrucciones e historias.
-- `src/i18n/*.json`: el aviso de modo local dice explícitamente "sin cuenta ni servidor; tus datos no salen de tu dispositivo", en línea con `docs/PRIVACY.md`.
-- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: cifras reales (143 tests, 267.18 kB JS, 0 vulnerabilidades), persistencia v2, tags traducidos y enlaces a los documentos nuevos.
+- Major toolchain: **Vite 8.3.5**, **Vitest 5.0.5**, **@vitejs/plugin-react 6.1.2**, **vite-plugin-pwa 2.0.0**, **Zod 4.6.7** and TypeScript 5.9.3.
+- `src/lib/schemas.ts` migrated to **`zod/mini`** with `.check(...)`: same validation, smaller bundle than full Zod 4 (~64 kB less).
+- `vite.config.ts`: `pool: 'vmThreads'` to soften Vitest 5's environment cost.
+- `src/lib/db.ts`: IndexedDB moves to **v2** and drops the unused `recipes` store; `equipment` + `settings` remain the only IndexedDB persistence.
+- `tests/i18n.test.ts`: now requires keys for `grindKey` and every data `tag`, in addition to names, descriptions, instructions and stories.
+- `src/i18n/*.json`: the local-mode notice explicitly says "no account or server; your data never leaves your device", in line with `docs/PRIVACY.md`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: real figures (143 tests, 267.18 kB JS, 0 vulnerabilities), v2 persistence, translated tags and links to the new documents.
 ### Fixed
-- Favoritos: se decidió **no conservar** los guardados con ids pre-v2. Dejan de coincidir y el usuario puede borrar sus datos; no se inventa un mapeo receta a receta. La migración de método (`prensa-francesa`) y de campos en recetas propias se mantiene porque es contenido, no preferencia.
-- `npm audit`: de **11 vulnerabilidades (2 críticas, 3 altas)** a **0**, sin `--force` y con tests/build verdes.
-- Bundle: de 300.94 kB (80.86 kB gzip) a **267.18 kB (74.90 kB gzip)** pese a subir de major el toolchain.
+- Favorites: saved entries with pre-v2 ids are **not preserved**. They no longer match and the user can clear their data; no recipe-by-recipe mapping is invented. Method migration (`prensa-francesa`) and custom-recipe field migration remain because that is content, not preference.
+- `npm audit`: from **11 vulnerabilities (2 critical, 3 high)** to **0**, without `--force` and with green tests/build.
+- Bundle: from 300.94 kB (80.86 kB gzip) to **267.18 kB (74.90 kB gzip)** despite the major toolchain bump.
 ### Removed
-- Store IndexedDB `recipes` (reservado y sin uso desde su creación).
-- Dependencia implícita de Zod 4 completo en el bundle de producción.
-- Cualquier migración de favoritos pre-v2: se acepta que las preferencias viejas se pierdan.
+- IndexedDB `recipes` store (reserved and unused since creation).
+- Implicit full Zod 4 dependency in the production bundle.
+- Any pre-v2 favorites migration: old preferences are accepted as lost.
 ### Verified
-- `npm test` **143/143 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite 8/PWA): **267.18 kB JS (74.90 kB gzip)**, **22.86 kB CSS**, 16 entradas de precache; `npm audit` **0 vulnerabilidades**.
+- `npm test` **143/143 across 15 files**; clean `npm run build` (`tsc -b` + Vite 8/PWA): **267.18 kB JS (74.90 kB gzip)**, **22.86 kB CSS**, 16 precache entries; `npm audit` **0 vulnerabilities**.
 ### Notes
-- El aviso de privacidad es un **borrador** con placeholders de responsable y contacto; no afirmar cumplimiento legal hasta la revisión.
-- La validación en taza **no se ejecutó**: `docs/VALIDATION.md` es el protocolo, no evidencia.
-- No volver a importar `zod` completo: el bundle crece ~64 kB y rompe el NFR de tamaño.
-- Vitest 5 tarda ~40 s en 15 archivos (antes ~decenas de segundos menos); es coste de la versión mayor, mitigado con `vmThreads`.
+- The privacy notice is a **draft** with controller and contact placeholders; do not claim legal compliance until review.
+- In-cup validation was **not executed**: `docs/VALIDATION.md` is the protocol, not evidence.
+- Do not import full `zod` again: the bundle grows ~64 kB and breaks the size NFR.
+- Vitest 5 takes ~40 s for 15 files (previously tens of seconds less); it is the cost of the major version, mitigated with `vmThreads`.
 
-## [Unreleased] — 029 catálogo ampliado, i18n completo y scroll real
+## [Unreleased] — 029 expanded catalog, complete i18n and real scrolling
 ### Added
-- `src/data/recipes.json`: catálogo clásico ampliado de 18 a **40 recetas** (3–6 por método), con ids en inglés (`v60-balanced`, `chemex-three-pours`, `french-press-light-17`, `moka-partners-12`…), `difficulty` normalizada a `easy|medium|advanced` y `tags` en inglés.
-- `src/data/discovery.json`: **18 descubrimientos** atípicos (antes 9), todos con `storyKey`; nuevas claves de instrucción `phase.bypass`, `phase.ice` y `phase.preinfusion` (los tipos de fase del esquema no cambian).
-- `src/lib/legacyIds.ts`: mapa `prensa-francesa → french-press` para equipos guardados en IndexedDB y recetas propias antiguas; se aplica al hidratar equipos (`src/App.tsx`) y al normalizar recetas (`src/lib/customRecipes.ts`).
-- `tests/custom-recipes.test.ts`: cobertura del mapa de ids legacy; `tests/settings.test.tsx`: un equipo guardado con id antiguo se migra en vez de perderse.
-- `src/i18n/es.json`, `src/i18n/en.json`: claves `recipe.meta`, `recipe.minutes`, `brew.summaryMeta`, `brew.phaseProgress`, `phase.manual`, `phase.bypass`, `phase.ice`, `phase.preinfusion`, `common.on`, `common.off`, `timer.muteOn`, `timer.muteOff`, `difficulty.easy|medium|advanced`, `method.french-press.*`, `grind.*` en inglés y los nombres/historias del catálogo nuevo (220 claves por idioma, paridad exacta).
+- `src/data/recipes.json`: classic catalog expanded from 18 to **40 recipes** (3–6 per method), with English ids (`v60-balanced`, `chemex-three-pours`, `french-press-light-17`, `moka-partners-12`…), `difficulty` normalized to `easy|medium|advanced` and English `tags`.
+- `src/data/discovery.json`: **18** atypical discoveries (previously 9), all with `storyKey`; new instruction keys `phase.bypass`, `phase.ice` and `phase.preinfusion` (schema phase types do not change).
+- `src/lib/legacyIds.ts`: `prensa-francesa → french-press` map for equipment stored in IndexedDB and old custom recipes; applied when hydrating equipment (`src/App.tsx`) and normalizing recipes (`src/lib/customRecipes.ts`).
+- `tests/custom-recipes.test.ts`: legacy id-map coverage; `tests/settings.test.tsx`: saved equipment with an old id is migrated instead of lost.
+- `src/i18n/es.json`, `src/i18n/en.json`: `recipe.meta`, `recipe.minutes`, `brew.summaryMeta`, `brew.phaseProgress`, `phase.manual`, `phase.bypass`, `phase.ice`, `phase.preinfusion`, `common.on`, `common.off`, `timer.muteOn`, `timer.muteOff`, `difficulty.easy|medium|advanced`, `method.french-press.*`, English `grind.*` and the new catalog names/stories (220 keys per language, exact parity).
 ### Changed
-- `src/data/methods.json`: ids/iconos de método en inglés (`french-press`), `grindKey` normalizadas (`grind.medium`, `grind.medium-coarse`, `grind.medium-fine`, `grind.coarse`, `grind.fine`); límites actualizados (v60 3 tazas/510 g, prensa 5/1000, etc.).
-- `src/App.tsx`, `src/components/DiscoveryModal.tsx`: metadatos de receta, resumen, progreso `fase i/n`, etiqueta `manual`, mute y `On/Off` ahora salen de i18n; `difficultyLabel()` traduce la dificultad y elimina tildes del slug.
-- `src/components/EquipmentIcon.tsx`: `SUPPORTED_ICON_IDS` usa `french-press` (la forma dibujada no cambia); `src/config.ts` alinea `CONFIG.equipment` con `methods.json`.
-- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: reescritos sobre el árbol real (9 métodos, 40+18 recetas, persistencia, scroll, scripts reales, sin `manifest.json` ni `validate:data`).
+- `src/data/methods.json`: English method ids/icons (`french-press`), normalized `grindKey` (`grind.medium`, `grind.medium-coarse`, `grind.medium-fine`, `grind.coarse`, `grind.fine`); updated limits (v60 3 cups/510 g, press 5/1000, etc.).
+- `src/App.tsx`, `src/components/DiscoveryModal.tsx`: recipe metadata, summary, `phase i/n` progress, `manual` label, mute and `On/Off` now come from i18n; `difficultyLabel()` translates difficulty and strips accents from the slug.
+- `src/components/EquipmentIcon.tsx`: `SUPPORTED_ICON_IDS` uses `french-press` (the drawn shape is unchanged); `src/config.ts` aligns `CONFIG.equipment` with `methods.json`.
+- `README.md`, `docs/PRD.md`, `docs/AGENTS.md`: rewritten against the real tree (9 methods, 40+18 recipes, persistence, scrolling, real scripts, no `manifest.json` or `validate:data`).
 ### Fixed
-- Scroll acotado real: `src/theme/app.css` añade `html,body{height:100%;overflow:hidden}`, `.app` con `100dvh` + `overflow:hidden`, y las regiones `.list-scroll`, `.home-scroll`, `.brew-scroll`; el test `tests/update-credits.test.tsx` vuelve a pasar.
-- `src/data/methods.json`: el tope de agua de v60 sube a 510 g para cubrir la receta `v60-hoffmann-30` (30 g × 16.67 = 500.1 g) sin romper el contrato de límites.
-- `tests/`: referencias a ids retirados actualizadas (`v60-balanced`, `aeropress-classic-15`, `chemex-balanced-16`), ratios esperados derivados de datos y textos de mute/fase/progreso vía i18n; ya no quedan literales `'On'`.
+- Real scoped scrolling: `src/theme/app.css` adds `html,body{height:100%;overflow:hidden}`, `.app` with `100dvh` + `overflow:hidden`, and the `.list-scroll`, `.home-scroll`, `.brew-scroll` regions; `tests/update-credits.test.tsx` passes again.
+- `src/data/methods.json`: v60 water ceiling rises to 510 g to cover `v60-hoffmann-30` (30 g × 16.67 = 500.1 g) without breaking the limits contract.
+- `tests/`: retired id references updated (`v60-balanced`, `aeropress-classic-15`, `chemex-balanced-16`), expected ratios derived from data and mute/phase/progress copy read through i18n; no `'On'` literals remain.
 ### Removed
-- Código y CSS muertos: `src/components/Brand.tsx`, `src/components/Toggle.tsx`, `src/theme/tokens.ts`, `renderCard`/`cards` en `src/App.tsx`, variables `lim`/`wmax` sin uso y reglas `.toggle`/`.switch-field`/`.switch-state` (incluido forced-colors).
-- Claves i18n sin uso (recetas del catálogo anterior, `method.prensa.*`, `phase.flip`, `phase.tonic`, `calc.water`, `timer.mute`, etc.).
+- Dead code and CSS: `src/components/Brand.tsx`, `src/components/Toggle.tsx`, `src/theme/tokens.ts`, `renderCard`/`cards` in `src/App.tsx`, unused `lim`/`wmax` variables and `.toggle`/`.switch-field`/`.switch-state` rules (including forced-colors).
+- Unused i18n keys (previous-catalog recipes, `method.prensa.*`, `phase.flip`, `phase.tonic`, `calc.water`, `timer.mute`, etc.).
 ### Verified
-- `npm test` **142/142 en 15 archivos**; `npm run build` limpio (`tsc -b` + Vite/PWA): **300.94 kB JS (80.86 kB gzip)**, **23.16 kB CSS**, 16 entradas de precache.
+- `npm test` **142/142 across 15 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **300.94 kB JS (80.86 kB gzip)**, **23.16 kB CSS**, 16 precache entries.
 ### Notes
-- Cambio de contrato de datos: los ids de receta y el id de método `prensa-francesa` cambiaron. Los favoritos guardados con ids viejos dejan de coincidir (no hay mapeo posible receta a receta); equipos y recetas propias sí se migran.
+- Data-contract change: recipe ids and the `prensa-francesa` method id changed. Favorites saved with old ids no longer match (no recipe-by-recipe mapping is possible); equipment and own recipes are migrated.
 
-## [Unreleased] — 028 persistencia local: IndexedDB, preferencias y recetas propias
+## [Unreleased] — 028 local persistence: IndexedDB, preferences and own recipes
 ### Fixed
-- `src/lib/db.ts`: la selección de equipos se **lee** de IndexedDB al arrancar (`loadEquipmentIds`) y se guarda de forma atómica (`saveEquipmentIds`, stores `equipment` + `settings`, admite selección vacía); `db()` ya no lanza de forma síncrona cuando IndexedDB no está disponible.
-- `src/App.tsx`: hidratación de equipos antes de persistir — los valores por defecto ya no sobrescriben la selección guardada; `methodId`/`recipeId` se ajustan a un método aún seleccionado y se solicita `navigator.storage.persist()` al arrancar.
-- `src/lib/prefs.ts`: persistencia segura (try/catch) de idioma, tema, modo avanzado y mute; `src/App.tsx` los guarda y restaura al recargar (antes solo se guardaba el tema).
-- `src/lib/customRecipes.ts`: migración de recetas guardadas con el contrato pre-v2 (`cafeDefaultG`, `fases`, `categoria`…) en lugar de descartarlas; se reescriben normalizadas para migrar una sola vez.
+- `src/lib/db.ts`: the equipment selection is **read** from IndexedDB on startup (`loadEquipmentIds`) and saved atomically (`saveEquipmentIds`, `equipment` + `settings` stores, empty selection supported); `db()` no longer throws synchronously when IndexedDB is unavailable.
+- `src/App.tsx`: equipment hydration before persisting — defaults no longer overwrite the saved selection; `methodId`/`recipeId` snap to a still-selected method and `navigator.storage.persist()` is requested on startup.
+- `src/lib/prefs.ts`: guarded persistence (try/catch) for language, theme, advanced mode and mute; `src/App.tsx` saves and restores them on reload (previously only theme was saved).
+- `src/lib/customRecipes.ts`: recipes saved with the pre-v2 contract (`cafeDefaultG`, `fases`, `categoria`…) are migrated instead of discarded; they are rewritten normalized so migration happens only once.
 ### Added
-- `tests/persistence.test.tsx`: idioma, modo avanzado, equipos y recetas propias sobreviven a un remount (recarga).
-- `tests/custom-recipes.test.ts`: caso de migración legacy; `tests/settings.test.tsx`: hidratación de equipos.
+- `tests/persistence.test.tsx`: language, advanced mode, equipment and own recipes survive a remount (reload).
+- `tests/custom-recipes.test.ts`: legacy migration case; `tests/settings.test.tsx`: equipment hydration.
 ### Verified
-- `npx tsc -b` limpio y `npm run build` limpio (16 entradas de precache). `npm test` 138/139: el único fallo (`tests/update-credits.test.tsx:128`) es preexistente — `src/theme/app.css` no contiene las reglas `html,body{height:100%;overflow:hidden}` ni `.list-scroll{overflow-y:auto}` que ese test exige desde `dc846ba`.
+- Clean `npx tsc -b` and clean `npm run build` (16 precache entries). `npm test` 138/139: the only failure (`tests/update-credits.test.tsx:128`) is pre-existing — `src/theme/app.css` does not contain the `html,body{height:100%;overflow:hidden}` or `.list-scroll{overflow-y:auto}` rules that test has required since `dc846ba`.
 
-## [Unreleased] — 027 PWA: update button, version, credits y scroll acotado
+## [Unreleased] — 027 PWA: update button, version, credits and scoped scrolling
 ### Added
-- `src/lib/useAppUpdate.ts`: hook del flujo de actualización manual (US-1) — listener `controllerchange` one-shot (recarga única al tomar control el SW nuevo), `registration.update()`, camino `waiting` (SKIP_WAITING), `installing` (espera acotada 5 s) y ninguno (`uptodate`); estados `idle|checking|uptodate|failed|unavailable` con esperas acotadas.
-- `src/App.tsx` (Ajustes): fila de versión `v{__APP_VERSION__}` (`data-testid="app-version"`), fila de actualización (`data-testid="update-button"`, deshabilitado mientras comprueba, feedback `<small aria-live="polite">`) y fila de créditos (`data-testid="settings-credit"`).
-- `src/components/Landing.tsx`: línea de crédito "By geduma" debajo del CTA (`data-testid="landing-credit"`), enlace a `CONFIG.creditUrl` (`https://geduma.com`) que abre en pestaña nueva (`target="_blank"` + `rel="noopener noreferrer"`); en Ajustes la fila de créditos idéntica.
-- `vite.config.ts`: `define.__APP_VERSION__` inyectado desde `package.json` (fuente única de verdad); `src/env.d.ts` declara el global.
-- `src/i18n/es.json`, `src/i18n/en.json`: claves `app.credit`, `settings.version`, `settings.update`, `settings.updateDesc`, `settings.updateChecking`, `settings.updateUptodate`, `settings.updateFailed`, `settings.updateUnavailable`.
-- `tests/update-credits.test.tsx`: 10 tests — versión, los cuatro caminos del flujo de actualización (seam mockeado de `navigator.serviceWorker`), créditos en Landing y Ajustes, contrato de scroll acotado.
+- `src/lib/useAppUpdate.ts`: manual update-flow hook (US-1) — one-shot `controllerchange` listener (single reload when the new SW takes control), `registration.update()`, `waiting` path (SKIP_WAITING), `installing` path (bounded 5 s wait) and none (`uptodate`); `idle|checking|uptodate|failed|unavailable` states with bounded waits.
+- `src/App.tsx` (Settings): version row `v{__APP_VERSION__}` (`data-testid="app-version"`), update row (`data-testid="update-button"`, disabled while checking, `<small aria-live="polite">` feedback) and credits row (`data-testid="settings-credit"`).
+- `src/components/Landing.tsx`: "By geduma" credit line below the CTA (`data-testid="landing-credit"`), linking to `CONFIG.creditUrl` (`https://geduma.com`) in a new tab (`target="_blank"` + `rel="noopener noreferrer"`); the same credits row appears in Settings.
+- `vite.config.ts`: `define.__APP_VERSION__` injected from `package.json` (single source of truth); `src/env.d.ts` declares the global.
+- `src/i18n/es.json`, `src/i18n/en.json`: `app.credit`, `settings.version`, `settings.update`, `settings.updateDesc`, `settings.updateChecking`, `settings.updateUptodate`, `settings.updateFailed`, `settings.updateUnavailable` keys.
+- `tests/update-credits.test.tsx`: 10 tests — version, the four update-flow paths (mocked `navigator.serviceWorker` seam), credits on Landing and Settings, scoped-scroll contract.
 ### Changed
-- `src/theme/app.css`: scroll acotado (US-4) — `html,body{height:100%;overflow:hidden}` (la página deja de scrollear), `.app` height-bounded (`height:100dvh`, `overflow:hidden`) + fila de grid desktop `minmax(0,1fr)`, nuevo `.list-scroll` (flex:1 + `overflow-y:auto` + overscroll contenido + safe areas vía padding de `.app`), `.brew-screen` scrolleable; estilos de crédito `.landing-credit`, `.credit-link`, `.setting-row-credits`.
-- `src/App.tsx`: wrappers de scroll — home (`<div class="home-scroll list-scroll">`, hero fijo), recetas (`.list-scroll` bajo el filtro segmentado, cabecera fija), Ajustes (`surface list-scroll`), brew preview (`surface … list-scroll`); brew running sin cambios.
-- `src/config.ts`: constante `creditUrl` (la URL del crédito nunca va inline en componentes).
+- `src/theme/app.css`: scoped scrolling (US-4) — `html,body{height:100%;overflow:hidden}` (the page no longer scrolls), height-bounded `.app` (`height:100dvh`, `overflow:hidden`) + desktop grid row `minmax(0,1fr)`, new `.list-scroll` (flex:1 + `overflow-y:auto` + contained overscroll + safe areas through `.app` padding), scrollable `.brew-screen`; credit styles `.landing-credit`, `.credit-link`, `.setting-row-credits`.
+- `src/App.tsx`: scroll wrappers — home (`<div class="home-scroll list-scroll">`, fixed hero), recipes (`.list-scroll` below the segmented filter, fixed header), Settings (`surface list-scroll`), brew preview (`surface … list-scroll`); brew running unchanged.
+- `src/config.ts`: `creditUrl` constant (the credit URL is never inline in components).
 ### Verified
-- `npm test` 133/133, `npm run build` limpio (tsc + Vite/PWA, 16 entradas de precache).
+- `npm test` 133/133, clean `npm run build` (tsc + Vite/PWA, 16 precache entries).
 
-### Corrección (029)
-- La afirmación de scroll de esta entrada no estaba en el árbol: `src/theme/app.css` nunca incluyó `html,body{height:100%;overflow:hidden}` ni `.list-scroll`, por lo que el contrato de `tests/update-credits.test.tsx` fallaba desde `dc846ba`. Se implementó de verdad en 029.
+### Correction (029)
+- The scrolling claim in this entry was not in the tree: `src/theme/app.css` never included `html,body{height:100%;overflow:hidden}` or `.list-scroll`, so the `tests/update-credits.test.tsx` contract had been failing since `dc846ba`. It was actually implemented in 029.
 
-## [Unreleased] — 026 reescritura completa de la suite de tests
+## [Unreleased] — 026 complete rewrite of the test suite
 ### Added
-- `tests/` nueva suite (13 archivos, 118 tests) que reemplaza la anterior (14 archivos, orientada a tareas puntuales): unit (`calc`, `schemas`, `custom-recipes`, `favorites`), contrato de datos (`catalog`, `i18n`, `quality`), hook (`use-timer` con fake timers sobre la rejilla rAF de 16 ms) e integración UI (`app-shell`, `brew-flow`, `recipes`, `settings`, `discovery`) con `happy-dom` + Testing Library.
-- `tests/helpers.tsx` (`renderApp`, `tEs`, `stubRandom`) y `tests/setup.ts` (cleanup por test, `localStorage.clear`, `vi.restoreAllMocks`).
-- `tests/quality.test.ts`: invariantes reales conservados de la suite vieja — sin `innerHTML`/`dangerouslySetInnerHTML`/`document.write` en `src/`.
-- Dependencias dev: `happy-dom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`.
-- `vite.config.ts`: bloque `test` de Vitest (`environment: 'happy-dom'`, `setupFiles`).
+- `tests/` new suite (13 files, 118 tests) replacing the previous one (14 files, task-specific): unit (`calc`, `schemas`, `custom-recipes`, `favorites`), data contract (`catalog`, `i18n`, `quality`), hook (`use-timer` with fake timers over the 16 ms rAF grid) and UI integration (`app-shell`, `brew-flow`, `recipes`, `settings`, `discovery`) with `happy-dom` + Testing Library.
+- `tests/helpers.tsx` (`renderApp`, `tEs`, `stubRandom`) and `tests/setup.ts` (per-test cleanup, `localStorage.clear`, `vi.restoreAllMocks`).
+- `tests/quality.test.ts`: real invariants kept from the old suite — no `innerHTML`/`dangerouslySetInnerHTML`/`document.write` in `src/`.
+- Dev dependencies: `happy-dom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`.
+- `vite.config.ts`: Vitest `test` block (`environment: 'happy-dom'`, `setupFiles`).
 ### Changed
-- `src/components/RecipeCreateModal.tsx`: fix real detectado por la suite — `method.limitHint` se interpolaba con claves crudas (`{cups}/{water}/{method}`) en el copy del límite; ahora con los tokens correctos (`{tazas}/{agua}/{metodo}`).
-- Expectativas derivadas de `src/data/*.json` (nunca literales de copy): los tests resuelven textos vía el diccionario i18n y límites vía el catálogo, por lo que sobreviven cambios de catálogo (p. ej. la expansión de 4 → 9 métodos).
+- `src/components/RecipeCreateModal.tsx`: real bug found by the suite — `method.limitHint` was interpolated with raw keys (`{cups}/{water}/{method}`) in the limit copy; it now uses the correct tokens (`{tazas}/{agua}/{metodo}`).
+- Expectations derived from `src/data/*.json` (never copy literals): tests resolve text through the i18n dictionary and limits through the catalog, so they survive catalog changes (e.g. the 4 → 9 method expansion).
 ### Removed
-- Suite anterior completa: `brand-014`, `brew-water-cups-ratio-023`, `centered-cards-006`, `desktop-012`, `desktop-017`, `discover-013`, `landing-018`, `motion-016`, `polish-004`, `settings.test.ts`, `stability-011`, `stable-005`, `timer-fixes-024` (tests de tareas pasadas/CSS, sin invariante que validar).
+- Entire previous suite: `brand-014`, `brew-water-cups-ratio-023`, `centered-cards-006`, `desktop-012`, `desktop-017`, `discover-013`, `landing-018`, `motion-016`, `polish-004`, `settings.test.ts`, `stability-011`, `stable-005`, `timer-fixes-024` (past-task/CSS tests with no invariant to validate).
 ### Notes
-- Workaround documentado en `tests/setup.ts`: happy-env re-dispara eventos burbujeados de `<label>` a su control, duplicando clicks en botones dentro de labels; parche `preventDefault()` dirigido solo a targets `BUTTON`.
-- Hallazgo: claves `grind.*` referenciadas por `methods.json` — verificado paridad i18n en la suite de contrato.
+- Workaround documented in `tests/setup.ts`: happy-env re-dispatches bubbled `<label>` events to their control, duplicating clicks on buttons inside labels; a targeted `preventDefault()` patch applies only to `BUTTON` targets.
+- Finding: `grind.*` keys referenced by `methods.json` — i18n parity verified in the contract suite.
 ### Verified
-- `npm test` 118/118, `npm run build` limpio (tsc + Vite/PWA).
+- `npm test` 118/118, clean `npm run build` (tsc + Vite/PWA).
 
-## [Unreleased] — 025 landing de bienvenida antes del home
+## [Unreleased] — 025 welcome landing before home
 ### Added
-- `src/components/Landing.tsx`: nuevo componente de bienvenida — capa glass translúcida (`.landing-glass`, backdrop-blur + borde), marca, título de bienvenida, subtítulo explicativo y CTA de entrada; render centrado en `100dvh`, sin scroll, mobile + desktop; copy vía i18n; sin `innerHTML` ni llamadas de red.
-- `src/App.tsx`: estado `showLanding` (`useState(true)`); el Landing renderiza antes del home y el CTA lo oculta para revelar el home.
-- `src/theme/app.css`: `.landing` — `min-height:100dvh`, flex centrado, `overflow:hidden`, padding con safe areas; `.landing-glass` capa de vidrio con `border-radius:32px` (40px desktop) y borde translúcido; desktop (`≥1024px`) con mayor padding, marca 64px, título hasta 52px, subtítulo con `max-width:42ch`, CTA ancho automático con sombra sutil.
-- `src/i18n/es.json`, `src/i18n/en.json`: claves `landing.welcome`, `landing.subtitle`, `landing.cta` (copy: "Empezar" / "Get started").
-- `tests/landing-018.test.ts`: nuevo archivo, 4 tests (props del componente y sin `innerHTML`, claves i18n en ambos locales, integración en App, CSS layout sin scroll).
+- `src/components/Landing.tsx`: new welcome component — translucent glass layer (`.landing-glass`, backdrop-blur + border), brand, welcome title, explanatory subtitle and entry CTA; centered render in `100dvh`, no scroll, mobile + desktop; copy through i18n; no `innerHTML` or network calls.
+- `src/App.tsx`: `showLanding` state (`useState(true)`); Landing renders before home and the CTA hides it to reveal home.
+- `src/theme/app.css`: `.landing` — `min-height:100dvh`, centered flex, `overflow:hidden`, safe-area padding; `.landing-glass` glass layer with `border-radius:32px` (40px desktop) and a translucent border; desktop (`≥1024px`) with more padding, 64px brand, title up to 52px, subtitle with `max-width:42ch`, auto-width CTA with a subtle shadow.
+- `src/i18n/es.json`, `src/i18n/en.json`: `landing.welcome`, `landing.subtitle`, `landing.cta` keys (copy: "Empezar" / "Get started").
+- `tests/landing-018.test.ts`: new file, 4 tests (component props and no `innerHTML`, i18n keys in both locales, App integration, no-scroll CSS layout).
 ### Changed
-- `src/App.tsx`: shell del home renderizado condicionalmente (`showLanding ? <Landing /> : <div class="app">…</div>`).
+- `src/App.tsx`: home shell rendered conditionally (`showLanding ? <Landing /> : <div class="app">…</div>`).
 ### Verified
 - `npm test` 79/79, `tsc -b` clean, `npm run build` clean (~248 KB JS).
 
@@ -174,8 +216,8 @@
 ### Changed
 - `src/App.tsx`: brew `summary` water input replaced by a cups range slider (`min=1`, `max=cupsMax`, `step=1`, default `1`, `disabled` when `cupsMax === 1`); water grams derived as `cups × gramsPerCup` clamped to `aguaMaxG`. Ratio text input replaced by `-` / `+` buttons (0.5 step, clamped to method `ratioMin`/`ratioMax`, default `recipe.ratio`); `brewRecipe` and method/recipe selects reset `cups = 1` and `ratio = recipe.ratio`.
 - `src/i18n/es.json`, `src/i18n/en.json`: added `calc.waterCups` and `calc.cupsSelected`.
-- `src/theme/app.css`: `.cups-slider` — track `var(--surface2)`, fill/thumb `var(--accent)`, border `var(--border)`; thumb como círculo/cilindro centrado sobre la track (`translateY(-50%)`); `width:100%` en móvil y desktop (todo el ancho del área de dosis); fill progresivo al 100% en el máximo (Aeropress 1 taza = barra llena); estado `disabled` grisáceo. Ratio: texto `input number` reemplazado por stepper compacto `-` `{ratio}` `+` (paso 0.5, clamp a `ratioMin`/`ratioMax`, botones desactivados en los límites), claves `calc.ratioMinus`/`calc.ratioPlus`.
-- `src/i18n/es.json`, `src/i18n/en.json`: añadidas `calc.waterTotal` (`{g} g de agua` / `{g} g water`), `calc.ratioMinus`, `calc.ratioPlus`; readout de agua ahora muestra conteo de tazas + gramos totales en lugar de `calc.cupEq`.
+- `src/theme/app.css`: `.cups-slider` — track `var(--surface2)`, fill/thumb `var(--accent)`, border `var(--border)`; thumb as a circle/cylinder centered on the track (`translateY(-50%)`); `width:100%` on mobile and desktop (full dose-area width); progressive fill to 100 % at the maximum (Aeropress 1 cup = full bar); greyish `disabled` state. Ratio: `input number` text replaced by a compact `-` `{ratio}` `+` stepper (0.5 step, clamped to `ratioMin`/`ratioMax`, buttons disabled at the limits), `calc.ratioMinus`/`calc.ratioPlus` keys.
+- `src/i18n/es.json`, `src/i18n/en.json`: added `calc.waterTotal` (`{g} g de agua` / `{g} g water`), `calc.ratioMinus`, `calc.ratioPlus`; the water readout now shows cup count + total grams instead of `calc.cupEq`.
 ### Tests
 - `tests/brew-water-cups-ratio-023.test.ts`: new file, 4 tests (slider range/disabled/readout, ratio +/- buttons, no text inputs, derived water).
 - `tests/stability-011.test.ts`: updated `disabled={waterMaxG === 1}` → `disabled={cupsMax === 1}` (intentional, matches 023 water slider).
@@ -299,8 +341,8 @@
 ## [Unreleased] — English-only code/tests/docs (data contract untouched)
 ### Changed
 - Tests renamed to English: `estable-005` → `stable-005`, `centrado-cards-006` → `centered-cards-006`, `estabilidad-011` → `stability-011`, `descubrir-013` → `discover-013` (one string updated: `setDiscoOpen` → `setDiscoveryOpen`).
-- Non-contract code identifiers to English: `discoPool/discoOpen` → `discoveryPool/discoveryOpen`, `allClasicas/visibleClasicas` → `allClassics/visibleClassics` in `src/App.tsx`; custom-recipe shape `{nombre, cafeDefaultG, notas}` → `{name, coffeeDefaultG, notes}` in `src/lib/customRecipes.ts` + `src/components/RecipeCreateModal.tsx` (localStorage customs from pre-push builds are purged gracefully, no white screen).
-- Docs to English: `docs/PRD.md`, `CHANGELOG.md` history, `docs/AGENTS.md` test-name refs. Untouched Spanish: `src/i18n/es.json` (app dictionary), `src/data/` field names/values (versioned contract), default-locale UI copy (`index.html`, PWA manifest).
+- Non-contract code identifiers moved to English: `discoPool/discoOpen` → `discoveryPool/discoveryOpen`, `allClasicas/visibleClasicas` → `allClassics/visibleClassics` in `src/App.tsx`; custom-recipe shape `{nombre, cafeDefaultG, notas}` → `{name, coffeeDefaultG, notes}` in `src/lib/customRecipes.ts` + `src/components/RecipeCreateModal.tsx` (localStorage customs from pre-push builds are purged gracefully, no white screen).
+- Docs to English: `docs/PRD.md`, `CHANGELOG.md` history, `docs/AGENTS.md` test-name refs. Left in Spanish: `src/i18n/es.json` (app dictionary), `src/data/` field names/values (versioned contract), default-locale UI copy (`index.html`, PWA manifest).
 ### Verified
 - `npm run validate:data` OK 7, `npm test` 47/47, `npm run build` clean.
 
