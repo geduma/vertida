@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — 036 mobile viewport, island clearance and glass blur
+### Fixed
+- **Blank band below the floating island (iPhone 15 Plus, installed PWA):** `.app` and `.landing` now take `height:var(--app-h,100dvh)` with the existing `100dvh`/`100svh`/`100vh` fallbacks, and the new `src/lib/useAppHeight.ts` hook measures `window.innerHeight` into `--app-h` on mount and on `resize`/`orientationchange` (`visualViewport` is intentionally not used, so the keyboard does not shrink the shell).
+- **Over-reported bottom safe area:** added `--safe-bottom:min(env(safe-area-inset-bottom, 0px), 34px)` and reused it in `.app`, `.tabbar`, `.screen-dock`, `.timer-dock`, `.modal-backdrop`, `.landing` and the desktop/short-viewport media queries. `--scroll-pad` is now `calc(var(--island-h) + 24px)`, so the inset is no longer counted twice.
+- **Home Methods panel running behind the island:** the `Methods` surface now stops 12 px above the island — `.home-body` reserves `padding-bottom:calc(var(--island-h) + 12px)` — and the `--scroll-pad` reserve applies only to `.list-scroll` (Recipes/Settings); `.home-methods-scroll` no longer reserves it. The desktop `@media(min-width:1024px)` override keeps `.home-body{padding-bottom:0;scroll-padding-bottom:0}`.
+- **Content stayed sharp behind the island:** removed `transform:translateZ(0)` and `will-change:backdrop-filter` from `.tabbar`, plus `-webkit-overflow-scrolling:touch` from `.list-scroll`, `.screen-scroll` and `.home-methods-scroll`, so iOS samples the backdrop instead of excluding a promoted layer.
+- **Light canvas in dark mode on the installed PWA:** removed the inline `style` attributes from `<html>` and `<body>` in `index.html`; height and background are owned by the theme CSS on `html`, `body` and `#root`.
+- **Test contract updated intentionally:** `tests/update-credits.test.tsx` now asserts the scroll pad lives only on `.list-scroll` (never on `.home-methods-scroll`), that `.home-body` clears the island with `padding-bottom:calc(var(--island-h) + 12px)`, that `will-change:backdrop-filter` and `-webkit-overflow-scrolling:touch` are absent, and that `--safe-bottom` is capped with `min(env(safe-area-inset-bottom …), 34px)`. New `tests/app-height.test.ts` covers the `--app-h` mount and resize updates.
+### Verified
+- `npm test` **158/158 across 18 files**; clean `npm run build` (`tsc -b` + Vite/PWA): **274.35 kB JS (76.73 kB gzip)**, **34.98 kB CSS (7.61 kB gzip)**, 16 precache entries (304.04 KiB).
+
 ## [Unreleased] — 035 English documentation refresh
 ### Changed
 - `docs/PRIVACY.md`: translated the full working draft from Spanish to English, keeping the legal-review warning, placeholders and the note that a Spanish version must be prepared for the Colombian market before publication.

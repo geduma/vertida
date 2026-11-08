@@ -16,7 +16,8 @@
   --motion-fast:120ms;--motion-normal:240ms;--motion-slow:320ms;
   --ease-out:cubic-bezier(.22,1,.36,1);
   --island-h:68px;
-  --scroll-pad:calc(var(--island-h) + 24px + env(safe-area-inset-bottom));
+  --safe-bottom:min(env(safe-area-inset-bottom, 0px), 34px);
+  --scroll-pad:calc(var(--island-h) + 24px);
   height: 100%;
 }
 
@@ -84,8 +85,9 @@ a{color:inherit}
 
 /* ---------- Shell: pages never scroll, screens do ---------- */
 .app{
-  max-width:640px;margin:0 auto;height:100dvh;min-height:100dvh;min-height:100svh;overflow:hidden;
-  padding:max(16px, env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom));
+  max-width:640px;margin:0 auto;height:100dvh;min-height:100dvh;min-height:100svh;
+  height:var(--app-h,100dvh);min-height:var(--app-h,100dvh);overflow:hidden;
+  padding:max(16px, env(safe-area-inset-top)) 16px calc(10px + var(--safe-bottom));
   display:flex;flex-direction:column;gap:12px;
   background:var(--bg);
 }
@@ -99,13 +101,13 @@ a{color:inherit}
 
 .list-scroll{overflow-y:auto}
 .list-scroll,.screen-scroll{
-  min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  min-height:0;overscroll-behavior:contain;
   touch-action:pan-y;
   scrollbar-width:thin;
   scrollbar-color:color-mix(in srgb,var(--muted) 35%,transparent) transparent;
 }
 .home-methods-scroll{
-  min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
   touch-action:pan-y;scrollbar-width:thin;
   scrollbar-color:color-mix(in srgb,var(--muted) 35%,transparent) transparent;
 }
@@ -123,9 +125,9 @@ a{color:inherit}
   display:flex;flex-direction:column;gap:14px;min-width:0;
 }
 /* Declared after `.surface` so its 16px padding cannot eat the island clearance. */
-.home-body,.list-scroll{
-  padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));
-  scroll-padding-bottom:calc(var(--scroll-pad) + env(safe-area-inset-bottom));
+.list-scroll{
+  padding-bottom:var(--scroll-pad);
+  scroll-padding-bottom:var(--scroll-pad);
 }
 .hero{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);
@@ -229,7 +231,7 @@ label>select{
 
 /* ---------- Liquid Glass island (single layer) ---------- */
 .tabbar{
-  position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+  position:fixed;left:10px;right:10px;bottom:calc(10px + var(--safe-bottom));
   max-width:620px;margin:0 auto;z-index:50;
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:6px;
   border-radius:999px;isolation:isolate;
@@ -243,8 +245,6 @@ label>select{
   backdrop-filter:blur(40px) saturate(180%) brightness(1.02);
   border:1px solid var(--glass-border);
   box-shadow:var(--glass-shadow);
-  transform:translateZ(0);
-  will-change:backdrop-filter;
 }
 .tabbar::before{
   content:'';position:absolute;inset:1px;z-index:0;pointer-events:none;border-radius:inherit;
@@ -302,7 +302,7 @@ label>select{
 .home-greeting{font-size:clamp(20px,5vw,26px);margin:0}
 .hero-home .hero-meta{font-size:14px;line-height:1.35;margin:0;color:var(--muted)}
 .hero-home .form-actions{margin-top:4px}
-.home-body{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:hidden}
+.home-body{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:hidden;padding-bottom:calc(var(--island-h) + 12px)}
 .home-methods{flex:1;min-height:0}
 .home-methods-scroll{flex:1;min-height:0;align-content:start;padding-right:2px}
 .home-stats{gap:12px}
@@ -388,14 +388,14 @@ label>select{
 .brew-screen{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;width:100%;max-width:760px;margin:0 auto}
 .screen-scroll{
   flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;touch-action:pan-y;
+  touch-action:pan-y;
   padding-bottom:8px;scroll-padding-bottom:8px;
 }
 .brew-header{gap:4px}
 .brew-header h2{margin:0}
 .screen-dock{
   flex:none;display:flex;gap:10px;align-items:stretch;
-  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  padding-top:10px;padding-bottom:calc(10px + var(--safe-bottom));
   border-top:1px solid var(--border);background:var(--bg);
 }
 .screen-dock>.cta{flex:1;width:auto;min-width:0}
@@ -429,7 +429,7 @@ label>select{
   border:1px solid var(--border);display:grid;place-items:center;
   font-variant-numeric:tabular-nums;
 }
-.timer-dock{flex:none;display:flex;flex-direction:column;gap:8px;padding-top:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--bg)}
+.timer-dock{flex:none;display:flex;flex-direction:column;gap:8px;padding-top:8px;padding-bottom:calc(10px + var(--safe-bottom));background:var(--bg)}
 .timer-primary{display:flex;gap:8px;align-items:stretch}
 .timer-primary>.cta{flex:1;width:auto;min-width:0}
 .timer-primary>.btn-secondary{flex:0 0 auto}
@@ -564,7 +564,7 @@ body[data-modal='true']{overscroll-behavior:none}
   -webkit-backdrop-filter:blur(16px) saturate(140%);
   backdrop-filter:blur(16px) saturate(140%);
   display:grid;place-items:center;
-  padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));
+  padding:max(12px,env(safe-area-inset-top)) 12px max(12px,var(--safe-bottom));
   animation:backdropIn 180ms var(--ease-out) both;
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -612,9 +612,10 @@ body[data-modal='true']{overscroll-behavior:none}
 /* ---------- Landing ---------- */
 .landing{
   position:relative;min-height:100dvh;height:100dvh;width:100%;
+  height:var(--app-h,100dvh);min-height:var(--app-h,100dvh);
   display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
   text-align:center;overflow-y:auto;overscroll-behavior:contain;
-  padding:max(20px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));
+  padding:max(20px,env(safe-area-inset-top)) 16px max(20px,var(--safe-bottom));
   box-sizing:border-box;
 }
 @supports not (height:100dvh){.landing{height:100vh}}
@@ -653,7 +654,7 @@ body[data-modal='true']{overscroll-behavior:none}
 /* ---------- Desktop (≥1024): sidebar + content column ---------- */
 @media(min-width:1024px){
   .app{
-    max-width:1440px;padding:32px calc(32px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(32px + env(safe-area-inset-left));
+    max-width:1440px;padding:32px calc(32px + env(safe-area-inset-right)) calc(32px + var(--safe-bottom)) calc(32px + env(safe-area-inset-left));
     display:grid;grid-template-columns:280px minmax(0,1fr);
     grid-template-rows:minmax(0,1fr);gap:32px;align-items:stretch;
   }
@@ -715,7 +716,7 @@ body[data-modal='true']{overscroll-behavior:none}
 
 /* ---------- Short viewports: keep content and CTAs on screen ---------- */
 @media(max-height:700px){
-  .app{gap:10px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .app{gap:10px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:calc(8px + var(--safe-bottom))}
   .app>section{gap:10px}
   .home-greeting{display:none}
   .hero-home{padding:12px;gap:4px}
@@ -726,9 +727,9 @@ body[data-modal='true']{overscroll-behavior:none}
   .mega{font-size:clamp(40px,11vw,52px)}
   .timer-col{gap:8px;padding:12px}
   .timer-screen{gap:8px}
-  .timer-dock{padding-top:6px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .timer-dock{padding-top:6px;padding-bottom:calc(8px + var(--safe-bottom))}
   .timer-secondary button{min-height:38px;font-size:12px}
-  .screen-dock{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  .screen-dock{padding-top:8px;padding-bottom:calc(8px + var(--safe-bottom))}
   .setting-row{min-height:52px;padding:8px 0}
   .landing-content{gap:14px}
   .landing-mark svg{width:40px;height:40px}

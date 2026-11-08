@@ -20,6 +20,7 @@ import UpdateDoneModal from './components/UpdateDoneModal';
 import { useAppUpdate } from './lib/useAppUpdate';
 import { createCustomRecipe, loadCustomRecipes, recipeDisplayName, saveCustomRecipes, type CustomRecipe } from './lib/customRecipes';
 import { loadFavorites, saveFavorites, toggleFavorite } from './lib/favorites';
+import { useAppHeight } from './lib/useAppHeight';
 
 const dicts: Record<string, Record<string, string>> = { es, en };
 type Tab = 'home' | 'brew' | 'recipes' | 'settings';
@@ -33,6 +34,7 @@ const TABS: { id: OriginTab; labelKey: string }[] = [
 ];
 
 export default function App() {
+  useAppHeight();
   const cat = useMemo(() => loadCatalog(), []);
   const [lang, setLang] = useState<'es' | 'en'>(() => readLang(navigator.language.startsWith('en') ? 'en' : 'es'));
   const t = (k: string) => dicts[lang][k] ?? dicts.es[k] ?? k;

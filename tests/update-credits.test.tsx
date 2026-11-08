@@ -245,5 +245,18 @@ describe('scoped scrolling (US-4)', () => {
     // A portaled modal hides the island and sits above every app layer.
     expect(css).toMatch(/body\[data-modal='true'\] \.tabbar\{[^}]*visibility:hidden/);
     expect(css).toMatch(/\.modal-backdrop\{[^}]*z-index:120/);
+    // The scroll pad lives only on `.list-scroll`; Home clears the island through `.home-body`.
+    expect(css).toMatch(/--scroll-pad:calc\(var\(--island-h\)\s*\+\s*24px\)/);
+    expect(css).toMatch(/\.list-scroll\{[^}]*padding-bottom:var\(--scroll-pad\)/);
+    expect(css).toMatch(/\.list-scroll\{[^}]*scroll-padding-bottom:var\(--scroll-pad\)/);
+    expect(css).not.toMatch(/\.home-methods-scroll[^{]*\{[^}]*var\(--scroll-pad\)/);
+    expect(css).toMatch(/\.home-body\{[^}]*padding-bottom:calc\(var\(--island-h\)\s*\+\s*12px\)/);
+    expect(css).not.toMatch(/\.home-body[^{]*\{[^}]*var\(--scroll-pad\)/);
+    // The safe-area reserve is capped so an over-reported iOS inset cannot open a band below the island.
+    expect(css).toMatch(/--safe-bottom:\s*min\(env\(safe-area-inset-bottom[^;]*34px\)/);
+    expect(css).not.toMatch(/env\(safe-area-inset-bottom\)/);
+    // Compositing hints that keep iOS from sampling the backdrop are gone.
+    expect(css).not.toMatch(/will-change:backdrop-filter/);
+    expect(css).not.toMatch(/-webkit-overflow-scrolling:touch/);
   });
 });
