@@ -1,8 +1,11 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dEn, renderApp, renderLanding, tEs } from './helpers';
 import { CONFIG } from '../src/config';
+
+const restartApp = vi.hoisted(() => vi.fn(async () => true));
+vi.mock('../src/lib/appRestart', () => ({ restartApp }));
 
 vi.mock('../src/lib/db', () => ({
   loadEquipmentIds: async () => null,
@@ -36,6 +39,10 @@ function goSettings(): void {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+beforeEach(() => {
+  restartApp.mockClear();
 });
 
 describe('version indicator (US-2)', () => {
@@ -93,7 +100,7 @@ describe('settings layout stability (ES↔EN)', () => {
     expect(css).toMatch(/\.setting-label small\{[^}]*height:2\.8em/);
     expect(css).toMatch(/\.settings-footnote \.next\{[^}]*height:2\.8em/);
     for (const rule of [
-      '.btn-equip{width:150px}',
+      '.btn-equip{width:auto;min-width:150px',
       '.btn-update{width:104px}',
       '.btn-feedback{width:120px}',
       '.segmented-advanced{width:184px}',
@@ -111,18 +118,21 @@ describe('update action (US-1)', () => {
     goSettings();
     fireEvent.click(screen.getByTestId('update-button'));
     expect(screen.getByTestId('update-feedback').textContent).toBe(tEs('settings.updateChecking'));
-    expect(await screen.findByRole('dialog', { name: tEs('settings.updateModalTitle') })).toBeTruthy();
+    // The hook waits briefly for a fetched worker before reporting "up to date".
+    expect(await screen.findByRole('dialog', { name: tEs('settings.updateModalTitle') }, { timeout: 3000 })).toBeTruthy();
     expect(screen.getByText(tEs('settings.updateModalBody').replace('{version}', `v${__APP_VERSION__}`))).toBeTruthy();
+    expect(restartApp).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('update-modal-close'));
   });
 
-  it('asks a waiting worker to skip waiting (reload happens via controllerchange)', async () => {
+  it('asks a waiting worker to skip waiting and fully restarts the app', async () => {
     const postMessage = vi.fn();
     mockSW({ update: vi.fn(async () => undefined), waiting: { postMessage }, installing: null });
     renderApp();
     goSettings();
     fireEvent.click(screen.getByTestId('update-button'));
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' }));
+    await vi.waitFor(() => expect(restartApp).toHaveBeenCalledTimes(1));
     // No uptodate/failed feedback while the new worker takes control
     expect(screen.queryByText(tEs('settings.updateUptodate'))).toBeNull();
   });
@@ -166,20 +176,24 @@ describe('credits (US-3)', () => {
 });
 
 describe('scoped scrolling (US-4)', () => {
-  it('home keeps the hero fixed and scrolls methods + stats in a list container', () => {
+  it('home keeps the hero and stats fixed and scrolls only the method list', () => {
     const { container } = renderApp();
     expect(container.querySelector('.home .hero-home')).toBeTruthy();
     expect(container.querySelector('.home .surface.home-methods')).toBeTruthy();
-    expect(container.querySelectorAll('.home-scroll')).toHaveLength(1);
+    const body = container.querySelector('.home .home-body');
+    expect(body).toBeTruthy();
+    expect(body!.classList.contains('home-scroll')).toBe(false);
+    expect(container.querySelectorAll('.home .home-methods-scroll')).toHaveLength(1);
   });
 
   it('recipes and settings scroll their list containers, not the page', () => {
     const { container } = renderApp();
     fireEvent.click(screen.getByRole('tab', { name: tEs('nav.recipes') }));
-    expect(container.querySelector('section.surface .list-scroll')).toBeTruthy();
+    expect(container.querySelector('section.recipes-screen .list-scroll')).toBeTruthy();
     expect(container.querySelectorAll('.list-scroll')).toHaveLength(1);
     goSettings();
-    expect(screen.getByRole('region', { name: tEs('settings.title') }).classList.contains('list-scroll')).toBe(true);
+    const settings = screen.getByRole('region', { name: tEs('settings.title') });
+    expect(settings.querySelector('.settings-scroll.list-scroll')).toBeTruthy();
     expect(container.querySelectorAll('.list-scroll')).toHaveLength(1);
   });
 
@@ -220,6 +234,16 @@ describe('scoped scrolling (US-4)', () => {
     expect(css).toMatch(/\.recipe-grid\{/);
     expect(css).toMatch(/backdrop-filter:blur\(30px\) saturate\(200%\)/);
     expect(css).toMatch(/\.method-row\{grid-template-columns:repeat\(auto-fit,minmax\(140px,1fr\)\)/);
-    expect(css).toMatch(/\.settings-section,\.recipes-screen\{[^}]*border-bottom:0/);
+    // Home scrolls only the method grid; the shell and the home body never scroll.
+    expect(css).toMatch(/\.home-body\{[^}]*overflow:hidden/);
+    expect(css).toMatch(/\.home-methods-scroll\{[^}]*overflow-y:auto/);
+    expect(css).not.toMatch(/\.home-scroll\{/);
+    // Recipes and Settings use the same card margins/borders as Home (no edge bleed).
+    expect(css).toMatch(/\.recipes-header\{/);
+    expect(css).toMatch(/\.settings-panel\{/);
+    expect(css).not.toMatch(/\.settings-section,\.recipes-screen\{[^}]*margin-inline:-16px/);
+    // A portaled modal hides the island and sits above every app layer.
+    expect(css).toMatch(/body\[data-modal='true'\] \.tabbar\{[^}]*visibility:hidden/);
+    expect(css).toMatch(/\.modal-backdrop\{[^}]*z-index:120/);
   });
 });

@@ -1,8 +1,8 @@
 # PRD — Vertida · coffee recipes and timer
 
 - **Product:** Vertida · coffee recipes and timer. 100% client-side web app (Vite 8 + React TS + IndexedDB + PWA).
-- **Status:** v2.0.0 with the 002–030 iteration set (see `CHANGELOG.md`). Local-only; no auth, no user-data collection and no external database. Colombian Law 1581 notice drafted in `docs/PRIVACY.md`, pending legal review.
-- **Locales:** Spanish (default) and English. All UI copy lives in `src/i18n/es.json` / `en.json`; code and comments are in English.
+- **Status:** v2.0.0 with the 002–034 iteration set (see `CHANGELOG.md`). Local-only; no auth, no user-data collection and no external database. Colombian Law 1581 notice drafted in `docs/PRIVACY.md`, pending legal review.
+- **Locales:** Spanish (default) and English. All UI copy lives in `src/i18n/es.json` / `en.json`; code, comments and project documentation are in English.
 - **Unit:** grams only.
 
 ## 1. Vision and users
@@ -24,14 +24,15 @@ Primary context is mobile in the kitchen; desktop is a supported second layout.
 - Welcome screen with brand, title, subtitle and CTA; the CTA reveals the app.
 - Three tabs — **Home · Recipes · Settings** — with `role=tablist`. Brewing is a destination reached from a recipe, not a tab.
 - Floating glass island on mobile with icon + label tabs and a sliding selection lens; floating glass sidebar in the desktop grid (`≥1024px`). Exactly one glass layer per view: content never stacks glass on glass, and action docks are solid.
-- Content scrolls under the island and is never clipped by it: every scroll container reserves `--scroll-pad` (island height + 24 px + safe area), and the page itself never scrolls.
+- Content scrolls under the island and is never clipped by it: every scroll container reserves `--scroll-pad` (island height + 24 px + safe area), and the page itself never scrolls. Recipes and Settings reuse Home's card shell (`.hero` header + bordered `.surface` cards inside one `.list-scroll`), so their borders and margins stay aligned across screens.
 - Motion system: screen entrance with 60 ms child stagger, modal entrance, tab-lens slide, ring sweep, and press feedback. `prefers-reduced-motion` keeps the same layout with animations disabled; forced-colors and reduced-transparency fall back to opaque surfaces.
 - Mobile-first; reduced-motion and forced-colors styles included. Below 360 px, form actions scroll horizontally on purpose.
 
 ### 2.2 Home
 
 - Suggested recipe (favoring favorites when present), method chips with limits, stats (recipes / selected methods / max cups), and CTAs to Recipes and Discover.
-- Discovery opens a modal with an atypical recipe for the selected equipment: close, shuffle (no immediate repeat) and prepare; Escape and backdrop close it; focus is stable.
+- The hero and stats stay fixed; only the method grid (`.home-methods-scroll`) scrolls inside a non-scrolling `.home-body`, so the page never moves as a whole.
+- Discovery opens a modal with an atypical recipe for the selected equipment: close, shuffle (no immediate repeat) and prepare; Escape and backdrop close it; focus is stable. While it is open the app shell is `inert`, the floating island is hidden and background content cannot be reached.
 
 ### 2.3 Brew flow (4 screens)
 
@@ -80,6 +81,7 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 - Advanced `On | Off` (retention reference).
 - Equipment modal with counter.
 - Manual update check with feedback, GitHub icon-link to the public repository, a bug/feedback button that opens a new issue, local-only notice, version row (`v{__APP_VERSION__}` from `package.json`) and credits link. The version row is always last, immediately before the credit.
+- Equipment and update dialogs are portaled to `document.body`; the app shell is `inert`, the island is hidden and focus is trapped until the dialog closes.
 - ES↔EN stability: titles never wrap, descriptions reserve two fixed lines, action controls have fixed widths and the theme summary a fixed height, so switching language does not move any row.
 
 ### 2.9 Persistence
@@ -91,14 +93,14 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 ### 2.10 PWA, updates and offline
 
 - Installable manifest (`Vertida`, theme `#141414`, 192/512 any + maskable icons), precached shell and offline use.
-- `autoUpdate` service-worker registration plus a manual **Check for updates** action with `idle | checking | uptodate | failed | unavailable` states; when nothing new is found it shows an “up to date” confirmation modal.
+- `autoUpdate` service-worker registration plus a manual **Check for updates** action with `idle | checking | restarting | uptodate | failed | unavailable` states. When nothing new is found it shows an “up to date” confirmation modal; when a fetched worker is waiting, the app sends `SKIP_WAITING` and calls `restartApp()` (purge Cache Storage, unregister service workers, navigate to a `__vertida_restart` cache-busted URL) so the new build also applies on iOS standalone without closing the app by hand.
 - Workbox runtime caching is scoped to `/src/data/` only.
 
 ### 2.11 i18n and accessibility
 
 - `t(key)` with Spanish fallback to the key; dictionaries must have identical keys and placeholders (tested).
 - All UI copy goes through i18n; data display keys and `tag.<slug>` values are validated by tests.
-- Semantic tablist, radiogroups, dialogs, checkboxes and buttons; focus management in modals; visible focus; no `innerHTML`.
+- Semantic tablist, radiogroups, dialogs, checkboxes and buttons; portaled modals with `aria-modal`, `inert` app shell, hidden island, focus trap and return focus; visible focus; no `innerHTML`.
 
 ## 3. Non-goals
 
@@ -123,12 +125,12 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 | Area | Requirement |
 |---|---|
 | Client | 100% client-side; clean `tsc -b && vite build` |
-| Build size | 269.74 kB JS (75.57 kB gzip), 24.24 kB CSS, 16 precache entries |
+| Build size | 273.98 kB JS (76.61 kB gzip), 35.12 kB CSS (7.61 kB gzip), 16 precache entries |
 | Data | Aggregated versioned JSON; Zod 4 (`zod/mini`) parse; immutable field names |
-| Quality | `npm test` green (16 files / 150 tests); every behavior change has a test |
+| Quality | `npm test` green (17 files / 157 tests); every behavior change has a test |
 | Dependencies | `npm audit` reports 0 vulnerabilities; toolchain Vite 8 / Vitest 5 / Zod 4 |
 | Design | Mobile-first HIG-style tokens in `src/theme/app.css`; light/dark/auto; glass tab bar; desktop sidebar |
-| Scrolling | Page never scrolls; only `.list-scroll` / `.home-scroll` / `.brew-scroll` regions scroll |
+| Scrolling | Page never scrolls; only `.home-methods-scroll`, `.list-scroll` and `.screen-scroll` regions scroll |
 | A11y | Semantic roles, keyboard operation, focus management, contrast, reduced motion, forced colors |
 | Security | No `innerHTML`, no secrets, https-only links, Zod validation, React escaping, 0 audit findings |
 | Privacy | Local-only; no user-data collection or external database; Law 1581 draft pending legal review |
@@ -141,7 +143,7 @@ Nine methods: `v60, chemex, aeropress, french-press, kalita-wave, siphon, clever
 3. **Old favorites are discarded:** favorites saved against pre-v2 recipe ids no longer match and are dropped on the next save. Recipe ids are not remapped; method ids in equipment and custom recipes are still migrated.
 4. **No automated screenshot/visual regression suite**; layout is covered by DOM/CSS contract tests.
 5. **Bundle size** depends on `zod/mini`; importing full `zod` would add ~64 kB and must be treated as a regression.
-6. **Vitest 5 startup cost** is higher than Vitest 2 (~40 s for 16 files); `pool: 'vmThreads'` mitigates but does not eliminate it.
+6. **Vitest 5 startup cost** is higher than Vitest 2 (~40 s for 17 files); `pool: 'vmThreads'` mitigates but does not eliminate it.
 
 ## 7. Acceptance criteria (any delivery)
 

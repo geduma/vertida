@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { restartApp } from './appRestart';
 
 /**
  * Manual PWA update flow (US-1).
@@ -7,18 +8,41 @@ import { useCallback, useState } from 'react';
  * screen, desktop installed app) and long-lived tabs: the service worker may not
  * be re-checked for days. This hook gives Settings an explicit "check for
  * updates" action.
+ *
+ * When a newer worker is found the whole app is restarted through `restartApp`
+ * (cache purge + worker unregister + cache-busted navigation). On iOS standalone
+ * a plain `location.reload()` can keep the old shell alive, so a full restart is
+ * the only reliable way to apply the new build without closing the app by hand.
  */
-export type UpdateState = 'idle' | 'checking' | 'uptodate' | 'failed' | 'unavailable';
+export type UpdateState = 'idle' | 'checking' | 'restarting' | 'uptodate' | 'failed' | 'unavailable';
 
-const GRACE_MS = 300; // let the browser start installing the fetched worker
-const ACTIVATION_TIMEOUT_MS = 5000; // bounded wait for a new worker to activate
-const POLL_MS = 200;
-const RELOAD_FALLBACK_MS = 600; // fallback reload if controllerchange doesn't fire
+const UPDATE_WAIT_MS = 400; // how long to wait for the fetched worker to surface
+const POLL_MS = 50;
 
 const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
+/** Wait until the browser exposes the worker fetched by `update()` (or give up). */
+async function waitForPendingWorker(reg: ServiceWorkerRegistration): Promise<ServiceWorker | null> {
+  const deadline = Date.now() + UPDATE_WAIT_MS;
+  let pending = reg.waiting ?? reg.installing ?? null;
+  while (!pending && Date.now() < deadline) {
+    await sleep(POLL_MS);
+    pending = reg.waiting ?? reg.installing ?? null;
+  }
+  return pending;
+}
+
 export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>; reset: () => void } {
   const [state, setState] = useState<UpdateState>('idle');
+  const aliveRef = useRef(true);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
   const reset = useCallback(() => setState('idle'), []);
 
   const check = useCallback(async () => {
@@ -27,6 +51,7 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
       setState('unavailable');
       return;
     }
+
     let reg: ServiceWorkerRegistration | undefined;
     try {
       reg = await navigator.serviceWorker.getRegistration();
@@ -39,127 +64,39 @@ export function useAppUpdate(): { state: UpdateState; check: () => Promise<void>
       return;
     }
 
-    let reloaded = false;
-    const reload = () => {
-      if (reloaded) return;
-      reloaded = true;
-      try {
-        window.location.reload();
-      } catch {
-        // ignore
-      }
-    };
-
-    // Try to reload on controller change, but don't rely on it alone
-    const onControllerChange = () => reload();
-    try {
-      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, { once: true });
-    } catch {
-      // ignore
-    }
-
-    const cleanup = () => {
-      try {
-        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-      } catch {
-        // ignore
-      }
-    };
-
-    // Ensure we eventually reload if an update is applied (some PWAs need a manual reload)
-    const hardReloadFallback = window.setTimeout(reload, 1500);
-
     try {
       await reg.update();
     } catch {
-      clearTimeout(hardReloadFallback);
-      cleanup();
       setState('failed');
       return;
     }
 
-    // Grace period so `update()` can move the registration to "installing".
-    await sleep(GRACE_MS);
+    // `update()` resolves when the check finishes; the fetched worker can still
+    // be moving to `installing` / `waiting` for a few frames.
+    const pending = await waitForPendingWorker(reg);
+    if (!aliveRef.current) return;
 
-    // Case 1: There is already a worker waiting to be activated
-    if (reg.waiting) {
-      try {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      } catch {
-        // ignore
-      }
-      // Fallback in case controllerchange never fires in standalone/PWA
-      window.setTimeout(reload, RELOAD_FALLBACK_MS);
+    if (!pending) {
+      setState('uptodate');
       return;
     }
 
-    // Case 2: A worker is currently installing
-    if (reg.installing) {
-      const installing = reg.installing;
-      const t0 = Date.now();
-
-      const onStateChange = () => {
-        if (installing.state === 'activated') {
-          try {
-            installing.removeEventListener('statechange', onStateChange);
-          } catch {
-            // ignore
-          }
-          // Give the browser a moment to take control, then reload
-          window.setTimeout(reload, 150);
-        }
-      };
-
-      try {
-        installing.addEventListener('statechange', onStateChange);
-      } catch {
-        // ignore
-      }
-
-      // Also poll as a safety net
-      while (reg.installing && Date.now() - t0 < ACTIVATION_TIMEOUT_MS) {
-        await sleep(POLL_MS);
-        if (installing.state === 'activated') break;
-      }
-
-      try {
-        installing.removeEventListener('statechange', onStateChange);
-      } catch {
-        // ignore
-      }
-
-      if (installing.state === 'activated') {
-        window.setTimeout(reload, RELOAD_FALLBACK_MS);
-        return;
-      }
-
-      // If installation didn't complete in time but a worker appeared, still try to activate
-      if ((reg as ServiceWorkerRegistration).waiting) {
-        try {
-          (reg as ServiceWorkerRegistration).waiting!.postMessage({ type: 'SKIP_WAITING' });
-        } catch {
-          // ignore
-        }
-        window.setTimeout(reload, RELOAD_FALLBACK_MS);
-        return;
-      }
-
-      clearTimeout(hardReloadFallback);
-      cleanup();
-      setState('failed');
-      return;
+    try {
+      pending.postMessage({ type: 'SKIP_WAITING' });
+    } catch {
+      // A restart follows regardless: the next navigation fetches the new shell.
     }
 
-    // Case 3: No new worker found
-    // Give controllerchange a moment in case autoUpdate just activated
-    await sleep(200);
-    if (reloaded) {
-      clearTimeout(hardReloadFallback);
-      return;
+    setState('restarting');
+    let navigated = false;
+    try {
+      navigated = await restartApp();
+    } catch {
+      navigated = false;
     }
-    clearTimeout(hardReloadFallback);
-    cleanup();
-    setState('uptodate');
+    // In a real browser the navigation unloads this document before this line.
+    // If the environment blocked it, surface a failure instead of hanging.
+    if (!navigated && aliveRef.current) setState('failed');
   }, []);
 
   return { state, check, reset };

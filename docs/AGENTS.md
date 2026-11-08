@@ -17,7 +17,7 @@ Verified with Node 22.12+.
 
 ```bash
 npm install
-npm test               # vitest run — 16 files / 153 tests
+npm test               # vitest run — 17 files / 157 tests
 npm run dev            # http://localhost:5173
 npm run build          # tsc -b && vite build
 npm run preview        # serve dist/
@@ -34,11 +34,11 @@ src/
   main.tsx
   components/
     Landing.tsx           # welcome screen before the app shell
-    EquipmentModal.tsx    # equipment checkboxes + footer count/Save
+    EquipmentModal.tsx    # equipment checkboxes + footer count/Save (portaled)
     EquipmentIcon.tsx     # SVG per method; SUPPORTED_ICON_IDS is the icon contract
-    RecipeCreateModal.tsx # homemade recipe form
-    DiscoveryModal.tsx    # atypical recipe modal (close/shuffle/prepare)
-    UpdateDoneModal.tsx   # “up to date” confirmation
+    RecipeCreateModal.tsx # homemade recipe form (portaled)
+    DiscoveryModal.tsx    # atypical recipe modal (close/shuffle/prepare, portaled)
+    UpdateDoneModal.tsx   # “up to date” confirmation (portaled)
   lib/
     calc.ts               # calcWater/calcCoffee, methodCupG, cupSizeG, isRatioWarn, validate*
     schemas.ts            # Zod 4 mini: PhaseType, PhaseSchema, MethodSchema, RecipeSchema
@@ -49,17 +49,18 @@ src/
     favorites.ts          # favorites in localStorage (pre-v2 ids are discarded)
     legacyIds.ts          # pre-v2 method-id mapping
     useTimer.ts           # phase timer hook (rAF grid, background/WakeLock aware)
-    useAppUpdate.ts       # manual PWA update flow
+    useAppUpdate.ts       # update check: wait for worker, then full restart
+    appRestart.ts         # cache purge + SW unregister + cache-busted navigation
+    modalLayer.ts         # inert shell, island hiding and dialog focus trap
   data/
     methods.json          # 9 methods, versioned aggregate
     recipes.json          # 40 classic recipes
     discovery.json        # 18 atypical recipes (each with storyKey)
   i18n/es.json, en.json   # identical key sets; placeholders must match
   theme/app.css           # tokens, light/dark/auto, mobile + desktop, scroll containers
-tests/                    # 16 files / 153 tests
+tests/                    # 17 files / 157 tests
 docs/VALIDATION.md        # brew-validation protocol (not executed yet)
 docs/PRIVACY.md           # privacy notice draft (legal review pending)
-docs/features/001-pwa-update-ux/  # update-flow spec/plan/tasks (gitignored features dir)
 .github/workflows/azure-static-web-apps-ashy-desert-012092510.yml
 ```
 
@@ -86,11 +87,11 @@ Three aggregated, versioned files: `{ "version": 1, "methods": [...] }` and `{ "
 4. **Navigation:** tabs `Home | Recipes | Settings` (`role=tablist`). Brew is a destination. No Discover tab — discovery is a modal from Home. Back links return to the origin tab.
 5. **Recipes:** grouped by method order, sorted by localized display name; `All | Favorites`; card is a keyboard-operable `role=button`; delete/favorite buttons stop propagation. Homemade recipes live only in `localStorage`.
 6. **Theme:** `PREF_KEYS.themeMode` (`light|dark|auto`) plus legacy `vertida-theme`; apply via `document.documentElement.dataset.theme`; Auto follows `matchMedia` live. Mobile: floating glass island with a sliding lens; desktop (`≥1024px`): floating glass sidebar in the grid. Exactly one glass layer per view; docks are solid.
-7. **Settings:** language and theme are segmented radiogroups; Advanced is `On | Off` segmented; equipment is a modal with footer count + Save; version comes from `__APP_VERSION__` (`package.json`) and is the **last row before the credit**; update row is wired to `useAppUpdate` (short CTA `settings.updateCta`); GitHub icon-link uses `CONFIG.repoUrl` and the bug/feedback button uses `CONFIG.issuesUrl`; credits link uses `CONFIG.creditUrl`. Keep ES/EN copy short and symmetric and preserve the fixed-height CSS (`.setting-label-title`, 2-line description box, fixed control widths) so switching language never moves a row.
+7. **Settings:** language and theme are segmented radiogroups; Advanced is `On | Off` segmented; equipment is a modal with footer count + Save; version comes from `__APP_VERSION__` (`package.json`) and is the **last row before the credit**; update row is wired to `useAppUpdate` (short CTA `settings.updateCta`). A pending worker triggers `restartApp()` (cache purge + SW unregister + `__vertida_restart` navigation), not a plain reload; the row exposes `checking | restarting | uptodate | failed | unavailable`. GitHub icon-link uses `CONFIG.repoUrl` and the bug/feedback button uses `CONFIG.issuesUrl`; credits link uses `CONFIG.creditUrl`. Keep ES/EN copy short and symmetric and preserve the fixed-height CSS (`.setting-label-title`, 2-line description box, fixed control widths) so switching language never moves a row.
 8. **Persistence:** `localStorage` for language/theme/advanced/mute/favorites/custom recipes; IndexedDB `vertida` **v2** (`equipment` + `settings`) for equipment. The unused v1 `recipes` store is deleted during the v2 upgrade. Hydrate equipment **before** persisting; `loadEquipmentIds()` returning `null` means “keep defaults”, `[]` means “nothing selected”. All storage access is guarded.
-9. **Scrolling is scoped.** The page never scrolls: `html,body{height:100%;overflow:hidden}` and `.app` is viewport-bounded. One scroll container per screen: `.home-scroll`, `.list-scroll`, `.screen-scroll` or `.settings-section`. Brew running uses `.timer-col`; content must reserve `--scroll-pad` so it clears the island/sidebar. Any new overflowing list must use one of these containers.
+9. **Scrolling is scoped.** The page never scrolls: `html,body{height:100%;overflow:hidden}` and `.app` is viewport-bounded. Home keeps the hero and stats fixed and scrolls only `.home-methods-scroll` inside a non-scrolling `.home-body`; Recipes and Settings scroll a single `.list-scroll`; the brew preview/dock flow uses `.screen-scroll`. Content must reserve `--scroll-pad` so it clears the island/sidebar. Any new overflowing list must use one of these containers.
 10. **Security and dependencies:** no `innerHTML`/`dangerouslySetInnerHTML`/`document.write`, no secrets, https-only links, Zod validation, React escaping. Keep `npm audit` at 0; do not run `npm audit fix --force`, and do not import full `zod` (use `zod/mini`) — it would add ~64 kB to the bundle.
-11. **Docs live with code.** CHANGELOG entries are latest-first and grouped `Added/Changed/Fixed/Verified`; the `Verified:` line must be actually run.
+11. **Docs live with code, in English.** README, `docs/*` and CHANGELOG entries are English; UI copy stays in the two dictionaries. CHANGELOG entries are latest-first and grouped `Added/Changed/Fixed/Verified`; the `Verified:` line must be actually run. Wide doc rewrites need explicit user approval first.
 
 ## 6. Common tasks
 
@@ -140,7 +141,9 @@ npm test && npm run build
 - New behavior needs a test; every data/i18n key referenced by data must exist in both languages (`tests/i18n.test.ts`).
 - `tests/catalog.test.ts` guards method order, icon support, limits and monotonic phase water.
 - `tests/i18n.test.ts` guards dictionary parity, every data key (`grind.*`, `tag.*`) and the ES/EN length parity of Settings copy.
-- `tests/update-credits.test.tsx` guards the Settings row order (version before credit), the fixed-height ES↔EN layout contract and the scoped-scroll contract.
+- `tests/update-credits.test.tsx` guards the Settings row order (version before credit), the fixed-height ES↔EN layout contract, the full-restart update flow and the scoped-scroll contract.
+- `tests/app-restart.test.ts` guards the cache purge, SW unregister and cache-busted navigation used by the update flow.
+- `tests/discovery.test.tsx` guards the portaled modal, `inert` app shell and hidden island while a dialog is open.
 - `npm audit` must stay at 0; the lockfile is part of the deliverable.
 - Do not expand Workbox runtime caching beyond `/src/data/` without a decision record.
 - Wide doc rewrites need explicit user approval first.
@@ -158,4 +161,3 @@ npm test && npm run build
 - Product: `docs/PRD.md` · History: `CHANGELOG.md` · Entry: `README.md`
 - Validation protocol: `docs/VALIDATION.md` (not executed yet)
 - Privacy notice draft: `docs/PRIVACY.md` (legal review pending)
-- Local (gitignored) feature notes: `docs/features/001-pwa-update-ux/`

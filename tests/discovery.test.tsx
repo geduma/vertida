@@ -42,7 +42,7 @@ describe('discovery modal', () => {
   });
 
   it('closes via CTA, Escape and backdrop click', () => {
-    const { container } = renderApp();
+    renderApp();
 
     openDiscovery();
     closeDiscovery();
@@ -53,8 +53,22 @@ describe('discovery modal', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
 
     openDiscovery();
-    fireEvent.click(container.querySelector('.modal-backdrop')!);
+    fireEvent.click(document.querySelector('.modal-backdrop')!);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('locks the app shell and hides the island while the dialog is open', () => {
+    const { container } = renderApp();
+    const app = container.querySelector('.app')!;
+
+    openDiscovery();
+    expect(document.body.dataset.modal).toBe('true');
+    expect(app.hasAttribute('inert')).toBe(true);
+    expect(screen.queryByRole('dialog')).toBeTruthy();
+
+    closeDiscovery();
+    expect(document.body.dataset.modal).toBeUndefined();
+    expect(app.hasAttribute('inert')).toBe(false);
   });
 
   it('prepare starts brewing the discovery recipe through the normal flow', () => {

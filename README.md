@@ -26,9 +26,9 @@ Vertida helps you brew specialty coffee at home without friction: pick a method,
 - **Recipes.** Grouped by method, sorted per language, `All | Favorites`, heart toggles, and `+ New recipe` for homemade recipes saved on the device.
 - **Discover.** A random atypical recipe in a modal with close / shuffle / prepare; Escape and backdrop close; shuffle avoids repeating.
 - **Settings.** Language, theme (`Light | Dark | Auto`, follows the OS live), Advanced, equipment selection, manual update check, GitHub project link, bug/feedback button, local-only notice, version and credits (version sits last, right before the credit). Row heights are fixed so the layout does not move when switching ES↔EN.
-- **Install & offline.** PWA manifest with 192/512 icons (any + maskable), precached shell, and a manual “Check for updates” flow.
-- **Accessible by default.** Real tablist/radiogroup/dialog semantics, keyboard-operable cards, visible focus, reduced-motion and forced-colors support.
-- **Scoped scrolling.** The page itself never scrolls; list regions scroll instead, so heroes, headers and the floating tab bar stay in place.
+- **Install & offline.** PWA manifest with 192/512 icons (any + maskable), precached shell, and a manual “Check for updates” flow. A new worker triggers a full restart (cache purge + service-worker unregister + cache-busted navigation), so updates also apply on iOS standalone without closing the app by hand.
+- **Accessible by default.** Real tablist/radiogroup/dialog semantics, keyboard-operable cards, visible focus, reduced-motion and forced-colors support. Modals are portaled above the shell, which becomes `inert` and hides the floating island while a dialog is open.
+- **Scoped scrolling.** The page itself never scrolls. Home keeps its hero and stats fixed and scrolls only the method grid; Recipes and Settings scroll one bordered list each, so headers and the floating tab bar stay in place.
 
 ## Stack
 
@@ -71,14 +71,16 @@ src/
     loadData.ts           # zod-parse the three data files
     schemas.ts            # methods/phases/recipes contract
     useTimer.ts           # phase timer hook
-    useAppUpdate.ts       # manual PWA update flow
+    useAppUpdate.ts       # update check: wait for worker, then full restart
+    appRestart.ts         # cache purge + SW unregister + cache-busted navigation
+    modalLayer.ts         # inert shell, island hiding and dialog focus trap
   data/
     methods.json          # 9 methods, zod-validated
     recipes.json          # 40 classic recipes
     discovery.json        # 18 atypical recipes
   i18n/es.json, en.json   # all UI copy (parity enforced)
   theme/app.css           # tokens, light/dark, mobile + desktop layout
-tests/                    # 16 files, 150 tests
+tests/                    # 17 files, 157 tests
 ```
 
 ## Data contract
@@ -110,8 +112,8 @@ npm test && npm run build
 
 Verified for this revision:
 
-- `npm test` — **16 files, 150 tests, all passing**
-- `npm run build` — TypeScript clean; Vite build **269.74 kB JS (75.57 kB gzip)**, **24.24 kB CSS**, 16 precache entries
+- `npm test` — **17 files, 157 tests, all passing**
+- `npm run build` — TypeScript clean; Vite build **273.98 kB JS (76.61 kB gzip)**, **35.12 kB CSS (7.61 kB gzip)**, 16 precache entries
 - `npm audit` — **0 vulnerabilities**
 
 ## Deploy
@@ -125,7 +127,6 @@ Push to `main`; `.github/workflows/azure-static-web-apps-ashy-desert-012092510.y
 - Brew validation protocol: [`docs/VALIDATION.md`](docs/VALIDATION.md)
 - Privacy notice draft (pending legal review): [`docs/PRIVACY.md`](docs/PRIVACY.md)
 - History: [`CHANGELOG.md`](CHANGELOG.md)
-- Local feature notes (gitignored): `docs/features/001-pwa-update-ux/`
 
 ## Privacy
 

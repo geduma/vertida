@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import EquipmentIcon from './EquipmentIcon';
+import { lockModalLayer, trapModalFocus, unlockModalLayer } from '../lib/modalLayer';
 
 export type EquipMethod = {
   id: string;
@@ -27,9 +29,14 @@ export default function EquipmentModal({ open, methods, selected, onToggle, onCl
 
   useEffect(() => {
     if (!open) return;
+    lockModalLayer();
     saveRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      trapModalFocus(e, dialogRef.current);
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -37,13 +44,14 @@ export default function EquipmentModal({ open, methods, selected, onToggle, onCl
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      unlockModalLayer();
       returnFocusRef.current?.focus();
     };
   }, [open, returnFocusRef]);
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onClick={(e) => {
@@ -92,6 +100,7 @@ export default function EquipmentModal({ open, methods, selected, onToggle, onCl
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

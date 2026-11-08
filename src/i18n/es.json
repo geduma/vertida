@@ -219,6 +219,7 @@
   "settings.updateFailed": "No se pudo comprobar",
   "settings.updateModalBody": "Tienes la última versión de Vertida ({version}).",
   "settings.updateModalTitle": "Versión actualizada",
+  "settings.updateRestarting": "Reiniciando…",
   "settings.updateUnavailable": "No disponible aquí",
   "settings.version": "Versión",
   "tag.agitation": "Agitación",

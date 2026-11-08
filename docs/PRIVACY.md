@@ -1,67 +1,67 @@
-# Aviso de privacidad — Vertida (BORRADOR)
+# Privacy notice — Vertida (DRAFT)
 
-> **Estado: borrador de trabajo, pendiente de revisión legal.** No afirmar cumplimiento de la Ley 1581 de 2012 ni de ninguna otra norma hasta que este texto sea revisado por un abogado. Los campos entre corchetes deben completarse antes de publicarlo.
+> **Status: working draft, pending legal review.** Do not claim compliance with Colombian Law 1581 of 2012 or any other regulation until this text has been reviewed by a lawyer. Bracketed fields must be completed before publication.
 
-## 1. Qué es Vertida
+## 1. What Vertida is
 
-Vertida es una aplicación web de recetas y temporizador de café que funciona **íntegramente en el dispositivo del usuario**. No requiere cuenta, no tiene servidor propio y no envía información a un backend.
+Vertida is a coffee recipe and timer web app that runs **entirely on the user's device**. It requires no account, has no server of its own and sends no information to a backend.
 
-## 2. Qué información se guarda
+## 2. What information is stored
 
-Vertida **no recolecta datos de usuario**. Para funcionar, guarda en el almacenamiento local del navegador (`localStorage` e IndexedDB del propio dispositivo):
+Vertida **does not collect user data**. To work, it stores the following in the browser's local storage on the device itself (`localStorage` and IndexedDB):
 
-- **Preferencias de uso de la app:** idioma, tema, modo avanzado y silencio del temporizador.
-- **Favoritos:** identificadores de las recetas que el usuario marca.
-- **Recetas propias:** nombre, método, proporción, dosis y notas que el usuario decide crear y guardar.
-- **Selección de equipos:** métodos de café que el usuario elige.
+- **App preferences:** language, theme, advanced mode and timer mute.
+- **Favorites:** identifiers of the recipes the user marks.
+- **Own recipes:** name, method, ratio, dose and notes that the user chooses to create and save.
+- **Equipment selection:** the coffee methods the user selects.
 
-Estos datos no salen del dispositivo. No se escriben en ninguna base de datos externa, no se sincronizan en la nube y no se comparten con terceros.
+This data never leaves the device. It is not written to any external database, is not synced to the cloud and is not shared with third parties.
 
-## 3. Qué NO hace Vertida
+## 3. What Vertida does NOT do
 
-- No crea cuentas ni perfiles de usuario.
-- No usa analítica, cookies de seguimiento, publicidad ni identificadores publicitarios.
-- No transmite datos a servidores propios ni de terceros.
-- No vende, alquila ni cede información a terceros.
-- No solicita datos personales como nombre, documento, dirección, teléfono o correo.
+- It does not create accounts or user profiles.
+- It does not use analytics, tracking cookies, advertising or advertising identifiers.
+- It does not transmit data to its own or third-party servers.
+- It does not sell, rent or transfer information to third parties.
+- It does not request personal data such as name, identity document, address, phone number or email.
 
-## 4. Finalidad
+## 4. Purpose
 
-Los datos locales existen únicamente para que la app recuerde la configuración y el contenido que el usuario decidió guardar entre visitas. No se usan para perfilamiento ni para ninguna finalidad distinta.
+Local data exists only so the app can remember the settings and content the user chose to save between visits. It is not used for profiling or for any other purpose.
 
-## 5. Conservación y control del usuario
+## 5. Retention and user control
 
-Los datos permanecen en el navegador hasta que el usuario:
+Data remains in the browser until the user:
 
-- borre los datos del sitio desde la configuración del navegador, o
-- desinstale la aplicación instalada (PWA).
+- clears the site data from the browser settings, or
+- uninstalls the installed app (PWA).
 
-Vertida no conserva copias fuera del dispositivo. Al borrar los datos del sitio se pierden preferencias, favoritos y recetas propias; esa acción es irreversible.
+Vertida keeps no copies outside the device. Clearing site data deletes preferences, favorites and own recipes; that action is irreversible.
 
-## 6. Derechos del titular
+## 6. Data subject rights
 
-Como no hay recolección ni transmisión de datos personales por parte del responsable del producto, el usuario ejerce el control directamente sobre su navegador. Si en el futuro se añadiera cualquier tratamiento remoto, este aviso deberá actualizarse antes de su entrada en funcionamiento e incluir los canales para conocer, actualizar, rectificar y suprimir datos.
+Because the product controller does not collect or transmit personal data, the user exercises control directly through their browser. If any remote processing is added in the future, this notice must be updated before it takes effect and must include the channels to access, update, rectify and delete data.
 
-Contacto para asuntos de privacidad: **[CORREO DE CONTACTO]**
+Privacy contact: **[CONTACT EMAIL]**
 
-## 7. Seguridad
+## 7. Security
 
-Vertida no transmite información, por lo que la exposición se limita al propio dispositivo del usuario. La app usa validación de esquema (Zod) y escapado de React, y no inserta HTML crudo. La seguridad física y el acceso al dispositivo dependen del usuario.
+Vertida does not transmit information, so exposure is limited to the user's own device. The app uses schema validation (Zod) and React escaping, and does not insert raw HTML. Physical security and access to the device depend on the user.
 
-## 8. Menores de edad
+## 8. Minors
 
-Vertida no está dirigida a menores de edad ni recolecta datos de menores. No hay cuentas ni formularios que reciban información personal.
+Vertida is not directed at minors and does not collect data from minors. There are no accounts or forms that receive personal information.
 
-## 9. Cambios en este aviso
+## 9. Changes to this notice
 
-Si cambia el alcance de la app (por ejemplo, sincronización, cuentas o analítica), este documento deberá actualizarse y volver a revisarse antes de publicar el cambio. Última actualización del borrador: **2026-10-25**.
+If the app's scope changes (for example, synchronization, accounts or analytics), this document must be updated and reviewed again before the change is published. Last draft update: **2026-10-25**.
 
-## 10. Responsable
+## 10. Controller
 
-**[RESPONSABLE DEL PRODUCTO / TITULAR]** · **[CIUDAD, PAÍS]** · **[CORREO DE CONTACTO]**
+**[PRODUCT CONTROLLER / OWNER]** · **[CITY, COUNTRY]** · **[CONTACT EMAIL]**
 
 ---
 
-## English summary (not a legal document)
+## Language note
 
-Vertida runs entirely on the user's device. It does **not collect user data** and has no backend, accounts, analytics, ads or third-party transfers. It stores only app preferences, favorites, the equipment selection and recipes the user chooses to create, in the browser's local storage. That information never leaves the device and can be removed by clearing site data or uninstalling the PWA. This summary is informational; the Spanish draft above is the document that requires legal review.
+This English text is the working draft for review. Before publication for users in Colombia, a Spanish version must be prepared from this text and reviewed by counsel; the Spanish version is the one that must accompany the product in that market.
